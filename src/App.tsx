@@ -151,9 +151,14 @@ export default function App() {
           continue;
         }
         const rect = el.getBoundingClientRect();
-        const sectionCenter = rect.top + rect.height / 2;
-        const dist = Math.abs(sectionCenter - viewportCenter);
-        const prox = Math.max(0, 1 - dist / (vh * 0.85));
+        let prox = 0;
+        if (rect.top <= viewportCenter && rect.bottom >= viewportCenter) {
+          prox = 1;
+        } else {
+          const sectionCenter = rect.top + rect.height / 2;
+          const dist = Math.abs(sectionCenter - viewportCenter);
+          prox = Math.max(0, 1 - dist / (vh * 0.85));
+        }
         nextProx[ch.id] = prox;
         if (prox > bestProx) {
           bestProx = prox;
@@ -191,7 +196,10 @@ export default function App() {
   const scrollToChapter = useCallback((chapterId: ChapterId, customNodeId?: string) => {
     const el = sectionRefs.current[chapterId];
     if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.scrollIntoView({
+        behavior: 'smooth',
+        block: window.innerWidth >= 768 ? 'center' : 'start',
+      });
     }
     const chMeta = CHAPTERS.find((c) => c.id === chapterId);
     if (customNodeId) {
@@ -240,7 +248,7 @@ export default function App() {
     CERTIFICATIONS.find((c) => c.nodeId === activeCertProvider) || CERTIFICATIONS[0];
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden bg-[#04070a] text-slate-100">
+    <div className="relative h-[100dvh] w-full overflow-hidden bg-[#04070a] text-slate-100">
       {/* 3D Knowledge Cube Space */}
       <ObsidianBrainCanvas
         activeChapter={activeChapter}
@@ -270,8 +278,8 @@ export default function App() {
       </div>
 
       {/* 3-Zone Top Bar */}
-      <header className="fixed left-0 right-0 top-0 z-30 border-b border-white/10 bg-[#04070a]/90 px-4 py-3 sm:px-8">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-8">
+      <header className="fixed left-0 right-0 top-0 z-30 border-b border-white/10 bg-[#04070a]/90 px-4 py-2.5 sm:px-8 sm:py-3">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 sm:gap-8">
           <button
             type="button"
             onClick={() => scrollToChapter('home')}
@@ -335,7 +343,7 @@ export default function App() {
             <button
               type="button"
               onClick={() => setPaletteOpen(true)}
-              className="inline-flex cursor-pointer items-center gap-2 whitespace-nowrap shrink-0 rounded-lg border border-teal-300/35 bg-teal-400/12 px-3.5 py-1.5 text-xs font-medium text-teal-200 transition-colors hover:bg-teal-400/22"
+              className="inline-flex cursor-pointer items-center gap-2 whitespace-nowrap shrink-0 rounded-lg border border-teal-300/35 bg-teal-400/12 px-2.5 py-1.5 text-xs font-medium text-teal-200 transition-colors hover:bg-teal-400/22 sm:px-3.5"
             >
               <Search className="h-3.5 w-3.5" />
               <span>Navigate Cube</span>
@@ -368,7 +376,7 @@ export default function App() {
       {/* Scroll-Snap Story Container */}
       <main
         ref={scrollContainerRef}
-        className="story-scroll-container relative z-10 h-screen w-full snap-y snap-mandatory overflow-y-scroll scroll-smooth"
+        className="story-scroll-container relative z-10 h-[100dvh] w-full snap-y snap-proximity overflow-y-auto overflow-x-hidden scroll-smooth md:snap-mandatory"
       >
         {/* 00. HOME HERO (Unboxed Editorial Hero + Only the Monolithic Hero Cube on right) */}
         <StorySection
@@ -381,9 +389,9 @@ export default function App() {
             sectionRefs.current.home = el;
           }}
         >
-          <motion.div variants={staggerItemVariants} className="space-y-6">
-            <div className="flex items-center gap-5">
-              <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-teal-300/40 bg-[#070d12] shadow-[0_0_25px_rgba(94,234,212,0.18)] sm:h-24 sm:w-24">
+          <motion.div variants={staggerItemVariants} className="space-y-5 sm:space-y-6">
+            <div className="flex items-center gap-3.5 sm:gap-5">
+              <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-teal-300/40 bg-[#070d12] shadow-[0_0_25px_rgba(94,234,212,0.18)] sm:h-20 sm:w-20 md:h-24 md:w-24">
                 <img
                   src={ASSETS.profileImage}
                   alt="Valerio Serino portrait"
@@ -391,32 +399,32 @@ export default function App() {
                   className="h-full w-full object-cover object-top"
                 />
               </div>
-              <div>
-                <p className="text-xs font-medium tracking-wider text-teal-300">
+              <div className="min-w-0">
+                <p className="text-[11px] font-medium tracking-wider text-teal-300 sm:text-xs">
                   Interactive 3D Knowledge Cube
                 </p>
-                <h1 className="font-display mt-1 text-3xl font-bold tracking-tight text-balance text-slate-50 sm:text-5xl">
+                <h1 className="font-display mt-1 text-[clamp(1.75rem,4.4vw,3.15rem)] leading-[1.1] font-bold tracking-tight text-balance text-slate-50">
                   Valerio Serino
                 </h1>
-                <p className="mt-1.5 text-sm text-slate-300 sm:text-base">
+                <p className="mt-1.5 text-xs text-slate-300 sm:text-sm md:text-base">
                   Senior IT Consultant · AI, Distributed Systems &amp; Security
                 </p>
               </div>
             </div>
 
             {/* Sleek Terminal Prompt */}
-            <div className="max-w-lg border-l-2 border-teal-300 bg-[#070d12]/75 px-4 py-3 font-mono-tabular text-xs text-slate-100 sm:text-sm">
+            <div className="max-w-lg border-l-2 border-teal-300 bg-[#070d12]/75 px-3.5 py-2.5 font-mono-tabular text-xs text-slate-100 sm:px-4 sm:py-3 sm:text-sm">
               <span className="mr-2 text-teal-300">$</span>
               <span>{TYPED_GREETING.slice(0, typedLength)}</span>
               <span className="terminal-cursor ml-0.5 inline-block text-teal-300">▋</span>
             </div>
 
             {/* Clean CTAs */}
-            <div className="flex flex-wrap items-center gap-3.5">
+            <div className="flex flex-wrap items-center gap-3 sm:gap-3.5">
               <button
                 type="button"
                 onClick={() => scrollToChapter('about')}
-                className="inline-flex cursor-pointer items-center gap-2 whitespace-nowrap shrink-0 rounded-lg bg-teal-400 px-5 py-2.5 text-xs font-semibold text-slate-950 transition-colors hover:bg-teal-300"
+                className="inline-flex cursor-pointer items-center gap-2 whitespace-nowrap shrink-0 rounded-lg bg-teal-400 px-4 py-2.5 text-xs font-semibold text-slate-950 transition-colors hover:bg-teal-300 sm:px-5"
               >
                 <span>Enter the Cube</span>
                 <ArrowDown className="h-3.5 w-3.5" />
@@ -425,27 +433,33 @@ export default function App() {
               <a
                 href={ASSETS.cvPdf}
                 download="Valerio_Serino_CV_Resume.pdf"
-                className="inline-flex cursor-pointer items-center gap-2 whitespace-nowrap shrink-0 rounded-lg border border-white/15 bg-white/5 px-5 py-2.5 text-xs font-medium text-slate-100 transition-colors hover:border-teal-300/45 hover:text-teal-200"
+                className="inline-flex cursor-pointer items-center gap-2 whitespace-nowrap shrink-0 rounded-lg border border-white/15 bg-white/5 px-4 py-2.5 text-xs font-medium text-slate-100 transition-colors hover:border-teal-300/45 hover:text-teal-200 sm:px-5"
               >
                 <Download className="h-3.5 w-3.5 text-teal-300" />
                 <span>PDF Resume</span>
               </a>
             </div>
 
-            {/* Single-line Hairline KPI Strip (Zero boxy enclosures, zero text wrap) */}
-            <div className="grid grid-cols-3 divide-x divide-white/12 border-t border-white/12 pt-5">
+            {/* Hairline KPI Strip (Stacks cleanly on narrow phones, 3-col single-line on sm+) */}
+            <div className="grid grid-cols-1 divide-y divide-white/12 border-t border-white/12 pt-4 sm:grid-cols-3 sm:divide-x sm:divide-y-0 sm:pt-5">
               {EXECUTIVE_METRICS.map((metric, idx) => (
                 <div
                   key={metric.id}
-                  className={idx === 0 ? 'pr-4' : idx === 1 ? 'px-4' : 'pl-4'}
+                  className={
+                    idx === 0
+                      ? 'pb-3 sm:pb-0 sm:pr-4'
+                      : idx === 1
+                      ? 'py-3 sm:px-4 sm:py-0'
+                      : 'pt-3 sm:pl-4 sm:pt-0'
+                  }
                 >
                   <div
-                    className="font-display font-mono-tabular whitespace-nowrap text-base font-bold sm:text-xl"
+                    className="font-display font-mono-tabular whitespace-nowrap text-base font-bold sm:text-lg md:text-xl"
                     style={{ color: metric.accent }}
                   >
                     {metric.value}
                   </div>
-                  <div className="mt-1 text-xs font-medium text-slate-200">
+                  <div className="mt-0.5 text-xs font-medium text-slate-200 sm:mt-1">
                     {metric.label}
                   </div>
                   <div className="mt-0.5 text-[11px] text-slate-400">{metric.detail}</div>
@@ -470,11 +484,11 @@ export default function App() {
             sectionRefs.current.about = el;
           }}
         >
-          <motion.div variants={staggerItemVariants} className="space-y-6">
-            <blockquote className="font-display text-2xl font-semibold leading-snug text-teal-300 sm:text-3xl">
+          <motion.div variants={staggerItemVariants} className="space-y-5 sm:space-y-6">
+            <blockquote className="font-display text-[clamp(1.25rem,2.6vw,1.9rem)] font-semibold leading-snug text-teal-300">
               &ldquo;{ABOUT_CONTENT.quote}&rdquo;
             </blockquote>
-            <p className="text-base leading-relaxed text-slate-200 sm:text-lg">
+            <p className="text-sm leading-relaxed text-slate-200 sm:text-base md:text-lg">
               {ABOUT_CONTENT.bio}{' '}
               <span className="font-medium text-slate-50">
                 &ldquo;{ABOUT_CONTENT.quote}&rdquo;
@@ -510,9 +524,9 @@ export default function App() {
             sectionRefs.current.skills = el;
           }}
         >
-          <motion.div variants={staggerItemVariants} className="space-y-6">
+          <motion.div variants={staggerItemVariants} className="space-y-5 sm:space-y-6">
             {/* Interactive Segmented Switcher rotating 3D Cube to exact Skills cubetto */}
-            <div className="flex flex-wrap gap-2 border-b border-white/12 pb-3">
+            <div className="no-scrollbar flex flex-nowrap gap-1.5 overflow-x-auto border-b border-white/12 pb-3 sm:flex-wrap sm:gap-2">
               {SKILLS_GROUPS.map((group) => {
                 const isSelected = group.id === activeSkillsGroup.id;
                 return (
@@ -523,7 +537,7 @@ export default function App() {
                       setActiveSkillGroupId(group.id);
                       setActiveNodeId(group.id);
                     }}
-                    className={`relative cursor-pointer whitespace-nowrap shrink-0 rounded-lg px-3.5 py-2 text-xs font-semibold transition-colors ${
+                    className={`relative cursor-pointer whitespace-nowrap shrink-0 rounded-lg px-3 py-2 text-xs font-semibold transition-colors sm:px-3.5 ${
                       isSelected
                         ? 'text-slate-950'
                         : 'text-slate-300 hover:bg-white/5 hover:text-white'
@@ -549,7 +563,7 @@ export default function App() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-                className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3"
+                className="grid grid-cols-2 gap-x-4 gap-y-2.5 sm:grid-cols-3 sm:gap-x-6 sm:gap-y-3"
               >
                 {activeSkillsGroup.items.map((item, idx) => (
                   <motion.div
@@ -557,7 +571,7 @@ export default function App() {
                     initial={{ opacity: 0, x: 10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: idx * 0.03, duration: 0.28 }}
-                    className="border-b border-white/10 pb-2 text-sm font-medium text-slate-100"
+                    className="border-b border-white/10 pb-2 text-xs font-medium text-slate-100 sm:text-sm"
                   >
                     {item}
                   </motion.div>
@@ -601,7 +615,7 @@ export default function App() {
           }}
         >
           <motion.div variants={staggerItemVariants} className="space-y-5">
-            <div className="flex gap-6 border-b border-white/12 pb-3">
+            <div className="no-scrollbar flex flex-nowrap gap-5 overflow-x-auto border-b border-white/12 pb-3 sm:gap-6">
               {CERTIFICATIONS.map((group) => {
                 const isSelected = group.nodeId === activeCertGroup.nodeId;
                 return (
@@ -612,7 +626,7 @@ export default function App() {
                       setActiveCertProvider(group.nodeId);
                       setActiveNodeId(group.nodeId);
                     }}
-                    className={`relative cursor-pointer whitespace-nowrap shrink-0 pb-1 text-sm font-semibold transition-colors ${
+                    className={`relative cursor-pointer whitespace-nowrap shrink-0 pb-1 text-xs font-semibold transition-colors sm:text-sm ${
                       isSelected ? 'text-teal-300' : 'text-slate-400 hover:text-slate-100'
                     }`}
                   >
@@ -647,10 +661,10 @@ export default function App() {
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: idx * 0.04 }}
-                    className="flex items-center justify-between py-3 text-sm text-slate-100"
+                    className="flex items-center justify-between gap-3 py-2.5 text-xs text-slate-100 sm:py-3 sm:text-sm"
                   >
                     <span>{cert}</span>
-                    <span className="font-mono-tabular text-xs text-slate-500">
+                    <span className="font-mono-tabular shrink-0 text-xs text-slate-500">
                       0{idx + 1}
                     </span>
                   </motion.li>
@@ -675,14 +689,14 @@ export default function App() {
             sectionRefs.current.publications = el;
           }}
         >
-          <motion.div variants={staggerItemVariants} className="space-y-5">
+          <motion.div variants={staggerItemVariants} className="space-y-4 sm:space-y-5">
             <div className="font-display text-xs font-semibold tracking-widest text-amber-300">
               IEEE XPLORE · ICETCI 2021
             </div>
-            <h3 className="text-xl font-semibold leading-snug text-slate-50 sm:text-2xl">
+            <h3 className="text-[clamp(1.125rem,2.1vw,1.5rem)] font-semibold leading-snug text-slate-50">
               {PUBLICATION.title}
             </h3>
-            <p className="text-sm leading-relaxed text-slate-400">
+            <p className="text-xs leading-relaxed text-slate-400 sm:text-sm">
               {PUBLICATION.venue}
             </p>
             <div className="flex flex-wrap items-center gap-4 pt-2">
@@ -754,11 +768,11 @@ export default function App() {
             sectionRefs.current.contact = el;
           }}
         >
-          <motion.div variants={staggerItemVariants} className="space-y-6">
+          <motion.div variants={staggerItemVariants} className="space-y-5 sm:space-y-6">
             <div className="grid grid-cols-1 divide-y divide-white/10 border-y border-white/12 sm:grid-cols-2 sm:divide-x sm:divide-y-0">
-              <div className="flex items-center gap-3.5 py-4 sm:pr-6">
+              <div className="flex items-center gap-3.5 py-4 text-left sm:pr-6">
                 <MapPin className="h-5 w-5 shrink-0 text-teal-300" />
-                <div>
+                <div className="min-w-0">
                   <div className="text-[11px] text-slate-400">Location</div>
                   <div className="text-sm font-medium text-slate-100">
                     {CONTACT_INFO.location}
@@ -768,10 +782,10 @@ export default function App() {
 
               <a
                 href={CONTACT_INFO.phoneHref}
-                className="flex items-center gap-3.5 py-4 transition-colors hover:text-teal-200 sm:pl-6"
+                className="flex items-center gap-3.5 py-4 text-left transition-colors hover:text-teal-200 sm:pl-6"
               >
                 <Phone className="h-5 w-5 shrink-0 text-teal-300" />
-                <div>
+                <div className="min-w-0">
                   <div className="text-[11px] text-slate-400">Phone</div>
                   <div className="font-mono-tabular text-sm font-medium text-slate-100">
                     {CONTACT_INFO.phoneDisplay}
@@ -783,10 +797,10 @@ export default function App() {
             <div className="grid grid-cols-1 divide-y divide-white/10 border-b border-white/12 pb-2 sm:grid-cols-2 sm:divide-x sm:divide-y-0">
               <a
                 href={CONTACT_INFO.emailHref}
-                className="flex items-center gap-3.5 py-4 transition-colors hover:text-teal-200 sm:pr-6"
+                className="flex items-center gap-3.5 py-4 text-left transition-colors hover:text-teal-200 sm:pr-6"
               >
                 <Mail className="h-5 w-5 shrink-0 text-teal-300" />
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <div className="text-[11px] text-slate-400">Email</div>
                   <div className="truncate text-sm font-medium text-slate-100">
                     {CONTACT_INFO.email}
@@ -798,15 +812,15 @@ export default function App() {
                 href={CONTACT_INFO.linkedinUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-between gap-3 py-4 transition-colors hover:text-teal-200 sm:pl-6"
+                className="flex items-center justify-between gap-3 py-4 text-left transition-colors hover:text-teal-200 sm:pl-6"
               >
-                <div className="flex items-center gap-3.5">
+                <div className="flex min-w-0 flex-1 items-center gap-3.5">
                   <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-sm bg-teal-300/20 text-xs font-bold text-teal-300">
                     in
                   </span>
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <div className="text-[11px] text-slate-400">LinkedIn</div>
-                    <div className="text-sm font-medium text-slate-100">
+                    <div className="truncate text-sm font-medium text-slate-100">
                       {CONTACT_INFO.linkedinLabel}
                     </div>
                   </div>
@@ -815,7 +829,7 @@ export default function App() {
               </a>
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
+            <div className="flex flex-col items-start justify-between gap-4 pt-2 sm:flex-row sm:items-center">
               <div className="flex flex-wrap items-center gap-3">
                 <a
                   href={ASSETS.cvPdf}
@@ -838,7 +852,7 @@ export default function App() {
                 type="button"
                 onClick={() => scrollToChapter('home')}
                 aria-label="Reassemble cube and return to top"
-                className="inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-teal-300 transition-colors hover:text-teal-200"
+                className="inline-flex cursor-pointer items-center gap-2 whitespace-nowrap text-xs font-medium text-teal-300 transition-colors hover:text-teal-200"
               >
                 <span>Reassemble Cube &amp; Top</span>
                 <ArrowUp className="h-3.5 w-3.5" />

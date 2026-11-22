@@ -882,19 +882,29 @@ export function ObsidianBrainCanvas({
       }
       activeFlash = THREE.MathUtils.damp(activeFlash, 0, 3.8, delta);
 
+      const curW = container.clientWidth || window.innerWidth;
+      const curH = container.clientHeight || window.innerHeight;
+      const aspect = curW / Math.max(1, curH);
+      const aspectPullback =
+        aspect < 1.15
+          ? THREE.MathUtils.lerp(1.0, 1.54, THREE.MathUtils.clamp((1.15 - aspect) / 0.65, 0, 1))
+          : 1.0;
+
       if (st.resetSignal !== st.lastResetSignal) {
         st.lastResetSignal = st.resetSignal;
-        camera.position.set(0, 0.25, 7.6);
+        camera.position.set(0, 0.25, 7.6 * aspectPullback);
         controls.target.set(0, 0, 0);
         controls.update();
       }
 
-      const curW = container.clientWidth || window.innerWidth;
-      const curH = container.clientHeight || window.innerHeight;
       let targetOffsetX = 0;
-      if (curW >= 1024) {
+      if (curW >= 1280) {
         if (st.stageSide === 'right') targetOffsetX = -curW * 0.21;
         else if (st.stageSide === 'left') targetOffsetX = curW * 0.21;
+        else targetOffsetX = 0;
+      } else if (curW >= 1024) {
+        if (st.stageSide === 'right') targetOffsetX = -curW * 0.16;
+        else if (st.stageSide === 'left') targetOffsetX = curW * 0.16;
         else targetOffsetX = 0;
       }
       currentViewOffsetX = THREE.MathUtils.damp(currentViewOffsetX, targetOffsetX, 4.2, delta);
@@ -910,7 +920,7 @@ export function ObsidianBrainCanvas({
         _camDesiredPos.set(
           chCam[0] * easedExp,
           THREE.MathUtils.lerp(0.25, chCam[1], easedExp),
-          THREE.MathUtils.lerp(7.6, chCam[2], easedExp)
+          THREE.MathUtils.lerp(7.6, chCam[2], easedExp) * aspectPullback
         );
         camera.position.lerp(_camDesiredPos, 1 - Math.exp(-3.0 * delta));
       }
@@ -1268,9 +1278,9 @@ export function ObsidianBrainCanvas({
       />
 
       {hoveredPiece && (
-        <div className="pointer-events-none fixed bottom-20 left-1/2 z-20 -translate-x-1/2 rounded-lg border border-teal-400/35 bg-[#060c10]/95 px-4 py-2 text-center shadow-2xl">
-          <div className="text-xs font-semibold text-teal-200">{hoveredPiece.title}</div>
-          <div className="mt-0.5 text-[11px] text-slate-400">
+        <div className="pointer-events-none fixed bottom-20 left-1/2 z-20 max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-lg border border-teal-400/35 bg-[#060c10]/95 px-3.5 py-2 text-center shadow-2xl sm:bottom-24 sm:px-4">
+          <div className="truncate text-xs font-semibold text-teal-200">{hoveredPiece.title}</div>
+          <div className="mt-0.5 truncate text-[11px] text-slate-400">
             {hoveredPiece.meta || hoveredPiece.category} · Click to inspect
           </div>
         </div>

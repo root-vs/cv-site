@@ -165,20 +165,20 @@ export function StorySection({
       ? 'justify-end'
       : 'justify-center';
 
-  // Directional readability gradient behind content without clunky hard box outlines
+  // Directional readability gradient behind content on desktop, balanced full scrim on mobile/tablet
   const directionalScrim =
     align === 'left'
-      ? 'bg-gradient-to-r from-[#04070a]/96 via-[#04070a]/75 to-transparent'
+      ? 'bg-[#04070a]/72 lg:bg-transparent lg:bg-gradient-to-r lg:from-[#04070a]/96 lg:via-[#04070a]/75 lg:to-transparent'
       : align === 'right'
-      ? 'bg-gradient-to-l from-[#04070a]/96 via-[#04070a]/75 to-transparent'
-      : 'bg-radial from-[#04070a]/86 via-[#04070a]/54 to-transparent';
+      ? 'bg-[#04070a]/72 lg:bg-transparent lg:bg-gradient-to-l lg:from-[#04070a]/96 lg:via-[#04070a]/75 lg:to-transparent'
+      : 'bg-radial from-[#04070a]/88 via-[#04070a]/62 to-[#04070a]/25';
 
   return (
     <section
       id={id}
       ref={sectionRef}
       data-chapter={id}
-      className="pointer-events-none relative flex min-h-screen w-full snap-center snap-always items-center px-5 py-20 sm:px-10 lg:px-14"
+      className="pointer-events-none relative flex min-h-[100dvh] w-full snap-start md:snap-center items-center px-4 pt-20 pb-24 sm:px-8 sm:pt-24 sm:pb-28 lg:px-14 lg:pr-28"
     >
       {/* Subtle directional gradient scrim for crisp typography legibility over 3D space */}
       <div
@@ -206,10 +206,10 @@ export function StorySection({
           variants={staggerContainerVariants}
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: false, amount: 0.2 }}
+          viewport={{ once: false, amount: 0.12 }}
         >
           {(title || nodeLabel) && (
-            <motion.div variants={staggerItemVariants} className="mb-6">
+            <motion.div variants={staggerItemVariants} className="mb-5 sm:mb-6">
               {nodeLabel && (
                 <div className="mb-2 flex items-center gap-2.5 text-xs font-medium tracking-wider text-slate-400">
                   {indexLabel && (
@@ -220,7 +220,7 @@ export function StorySection({
               )}
 
               {title && (
-                <div className="flex items-center gap-3.5">
+                <div className="flex items-center gap-3 sm:gap-3.5">
                   <span
                     aria-hidden="true"
                     className="h-2.5 w-2.5 shrink-0 rounded-full"
@@ -229,7 +229,7 @@ export function StorySection({
                       boxShadow: `0 0 14px ${accentColor}, 0 0 28px ${accentColor}99`,
                     }}
                   />
-                  <h2 className="font-display text-2xl font-bold tracking-tight text-balance text-slate-50 sm:text-4xl">
+                  <h2 className="font-display text-[clamp(1.625rem,3.2vw,2.5rem)] leading-[1.15] font-bold tracking-tight text-balance text-slate-50">
                     {title}
                   </h2>
                 </div>

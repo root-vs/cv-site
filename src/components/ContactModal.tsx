@@ -25,11 +25,11 @@ export function ContactModal({ isOpen, onClose }: ContactModalProps) {
       aria-modal="true"
       aria-label="Contact Valerio Serino"
       onClick={onClose}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4 py-4"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-lg rounded-2xl border border-white/15 bg-[#080d12] p-6 shadow-2xl"
+        className="max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-2xl border border-white/15 bg-[#080d12] p-5 shadow-2xl sm:p-6"
       >
         <div className="flex items-start justify-between gap-4 border-b border-white/10 pb-4">
           <div>
@@ -44,38 +44,38 @@ export function ContactModal({ isOpen, onClose }: ContactModalProps) {
             type="button"
             onClick={onClose}
             aria-label="Close contact dialog"
-            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 text-slate-300 transition-colors hover:bg-white/10"
+            className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 text-slate-300 transition-colors hover:bg-white/10"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
-        <div className="mt-5 space-y-3.5 text-sm">
+        <div className="mt-5 space-y-3 text-sm sm:space-y-3.5">
           <div className="flex items-center gap-3 rounded-xl border border-white/5 bg-[#05090d] px-4 py-3 text-slate-200">
             <MapPin className="h-4 w-4 shrink-0 text-teal-300" />
-            <span>{CONTACT_INFO.location}</span>
+            <span className="min-w-0">{CONTACT_INFO.location}</span>
           </div>
 
           <a
             href={CONTACT_INFO.phoneHref}
             className="flex items-center justify-between gap-3 rounded-xl border border-white/5 bg-[#05090d] px-4 py-3 text-slate-200 transition-colors hover:border-teal-300/40 hover:text-teal-200"
           >
-            <span className="flex items-center gap-3">
+            <span className="flex min-w-0 items-center gap-3">
               <Phone className="h-4 w-4 shrink-0 text-teal-300" />
-              <span className="font-mono-tabular">{CONTACT_INFO.phoneDisplay}</span>
+              <span className="font-mono-tabular truncate">{CONTACT_INFO.phoneDisplay}</span>
             </span>
-            <ExternalLink className="h-3.5 w-3.5 text-slate-500" />
+            <ExternalLink className="h-3.5 w-3.5 shrink-0 text-slate-500" />
           </a>
 
           <a
             href={CONTACT_INFO.emailHref}
             className="flex items-center justify-between gap-3 rounded-xl border border-white/5 bg-[#05090d] px-4 py-3 text-slate-200 transition-colors hover:border-teal-300/40 hover:text-teal-200"
           >
-            <span className="flex items-center gap-3">
+            <span className="flex min-w-0 items-center gap-3">
               <Mail className="h-4 w-4 shrink-0 text-teal-300" />
-              <span>{CONTACT_INFO.email}</span>
+              <span className="truncate">{CONTACT_INFO.email}</span>
             </span>
-            <ExternalLink className="h-3.5 w-3.5 text-slate-500" />
+            <ExternalLink className="h-3.5 w-3.5 shrink-0 text-slate-500" />
           </a>
 
           <a
@@ -84,13 +84,13 @@ export function ContactModal({ isOpen, onClose }: ContactModalProps) {
             rel="noopener noreferrer"
             className="flex items-center justify-between gap-3 rounded-xl border border-white/5 bg-[#05090d] px-4 py-3 text-slate-200 transition-colors hover:border-teal-300/40 hover:text-teal-200"
           >
-            <span className="flex items-center gap-3">
+            <span className="flex min-w-0 items-center gap-3">
               <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-xs bg-teal-300/20 text-[10px] font-bold text-teal-300">
                 in
               </span>
-              <span>LinkedIn · {CONTACT_INFO.linkedinLabel}</span>
+              <span className="truncate">LinkedIn · {CONTACT_INFO.linkedinLabel}</span>
             </span>
-            <ExternalLink className="h-3.5 w-3.5 text-slate-500" />
+            <ExternalLink className="h-3.5 w-3.5 shrink-0 text-slate-500" />
           </a>
         </div>
 

@@ -31,7 +31,7 @@ export function WorkExperienceSection({ onFocusNode }: WorkExperienceSectionProp
       <div
         role="tablist"
         aria-label="Sytel Reply career milestones"
-        className="flex flex-wrap gap-4 border-b border-white/12 pb-1"
+        className="no-scrollbar flex flex-nowrap gap-5 overflow-x-auto border-b border-white/12 pb-1 sm:gap-7"
       >
         {EXPERIENCE_PHASES.map((phase) => {
           const isSelected = phase.id === activePhase.id;
@@ -78,9 +78,9 @@ export function WorkExperienceSection({ onFocusNode }: WorkExperienceSectionProp
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.04, duration: 0.3 }}
-                className="py-3.5 first:pt-1 last:pb-0"
+                className="py-2.5 first:pt-1 last:pb-0 sm:py-3.5"
               >
-                <p className="text-sm leading-relaxed text-slate-100">
+                <p className="text-[13px] leading-relaxed text-slate-100 sm:text-sm">
                   {activity.description}
                 </p>
                 <p className="mt-1.5 text-xs leading-relaxed text-slate-400">

@@ -50,7 +50,7 @@ export function CinemaSection({ onFocusNode }: CinemaSectionProps) {
     <motion.div variants={staggerItemVariants} className="space-y-4">
       {/* Film Selector Tabs + Carousel Controls */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-[#080d12]/92 p-1">
+        <div className="no-scrollbar inline-flex max-w-full items-center gap-1.5 overflow-x-auto rounded-xl border border-white/10 bg-[#080d12]/92 p-1">
           {CINEMA_FILMS.map((film, idx) => {
             const selected = idx === activeIndex;
             return (
@@ -58,7 +58,7 @@ export function CinemaSection({ onFocusNode }: CinemaSectionProps) {
                 key={film.id}
                 type="button"
                 onClick={() => selectFilm(idx)}
-                className={`cursor-pointer whitespace-nowrap shrink-0 rounded-lg px-3.5 py-1.5 text-xs font-medium transition-colors duration-200 ${
+                className={`cursor-pointer whitespace-nowrap shrink-0 rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition-colors duration-200 sm:px-3.5 sm:text-xs ${
                   selected
                     ? 'bg-teal-400/18 text-teal-200 ring-1 ring-teal-300/40'
                     : 'text-slate-400 hover:bg-white/5 hover:text-slate-100'
@@ -119,21 +119,23 @@ export function CinemaSection({ onFocusNode }: CinemaSectionProps) {
               <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-black/25" />
 
               {/* Inline Video Controls */}
-              <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2">
+              <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between gap-2 sm:bottom-3 sm:left-3 sm:right-3">
                 <button
                   type="button"
                   onClick={() => setIsPlayingPreview((prev) => !prev)}
-                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-white/15 bg-black/75 px-3 py-1.5 text-xs font-medium text-slate-100 transition-colors hover:border-teal-300/50 hover:text-teal-200"
+                  className="inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap shrink-0 rounded-lg border border-white/15 bg-black/75 px-2.5 py-1.5 text-[11px] font-medium text-slate-100 transition-colors hover:border-teal-300/50 hover:text-teal-200 sm:px-3 sm:text-xs"
                 >
                   {isPlayingPreview ? (
                     <>
                       <Pause className="h-3.5 w-3.5" />
-                      <span>Pause preview</span>
+                      <span>Pause</span>
+                      <span className="hidden sm:inline">preview</span>
                     </>
                   ) : (
                     <>
                       <Play className="h-3.5 w-3.5" />
-                      <span>Play preview</span>
+                      <span>Play</span>
+                      <span className="hidden sm:inline">preview</span>
                     </>
                   )}
                 </button>
@@ -141,29 +143,29 @@ export function CinemaSection({ onFocusNode }: CinemaSectionProps) {
                 <button
                   type="button"
                   onClick={() => setModalFilm(activeFilm)}
-                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-teal-400 px-3.5 py-1.5 text-xs font-semibold text-slate-950 transition-colors hover:bg-teal-300"
+                  className="inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap shrink-0 rounded-lg bg-teal-400 px-2.5 py-1.5 text-[11px] font-semibold text-slate-950 transition-colors hover:bg-teal-300 sm:px-3.5 sm:text-xs"
                 >
                   <Maximize2 className="h-3.5 w-3.5" />
-                  <span>Watch fullscreen</span>
+                  <span>Fullscreen</span>
                 </button>
               </div>
             </div>
 
             {/* Film Details & Tech Note */}
-            <div className="flex flex-col justify-between p-5 sm:p-6 md:col-span-5">
+            <div className="flex flex-col justify-between p-4 sm:p-6 md:col-span-5">
               <div>
                 <div className="text-xs font-medium text-teal-300">
                   {activeFilm.contest}
                 </div>
-                <h3 className="font-display mt-1 text-xl font-bold tracking-wide text-slate-50">
+                <h3 className="font-display mt-1 text-lg font-bold tracking-wide text-slate-50 sm:text-xl">
                   {activeFilm.title}
                 </h3>
-                <p className="mt-3 text-sm leading-relaxed text-slate-200">
+                <p className="mt-2.5 text-[13px] leading-relaxed text-slate-200 sm:mt-3 sm:text-sm">
                   {activeFilm.synopsis}
                 </p>
               </div>
 
-              <div className="mt-5 border-t border-white/10 pt-3.5">
+              <div className="mt-4 border-t border-white/10 pt-3 sm:mt-5 sm:pt-3.5">
                 <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
                   Production Pipeline
                 </div>
@@ -183,24 +185,24 @@ export function CinemaSection({ onFocusNode }: CinemaSectionProps) {
           aria-modal="true"
           aria-label={`${modalFilm.title} fullscreen player`}
           onClick={() => setModalFilm(null)}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 sm:p-8"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-3 sm:p-6"
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-5xl overflow-hidden rounded-2xl border border-white/15 bg-[#060a0e] shadow-2xl"
+            className="relative flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-white/15 bg-[#060a0e] shadow-2xl"
           >
-            <div className="flex items-center justify-between border-b border-white/10 px-5 py-3.5">
-              <div>
-                <h4 className="font-display text-sm font-semibold text-teal-300 sm:text-base">
+            <div className="flex shrink-0 items-center justify-between gap-3 border-b border-white/10 px-4 py-3 sm:px-5 sm:py-3.5">
+              <div className="min-w-0">
+                <h4 className="font-display truncate text-sm font-semibold text-teal-300 sm:text-base">
                   {modalFilm.title}
                 </h4>
-                <p className="text-xs text-slate-400">{modalFilm.contest}</p>
+                <p className="truncate text-xs text-slate-400">{modalFilm.contest}</p>
               </div>
               <button
                 type="button"
                 onClick={() => setModalFilm(null)}
                 aria-label="Close video player"
-                className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 text-slate-200 transition-colors hover:bg-white/15"
+                className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/5 text-slate-200 transition-colors hover:bg-white/15"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -210,9 +212,9 @@ export function CinemaSection({ onFocusNode }: CinemaSectionProps) {
               controls
               autoPlay
               playsInline
-              className="aspect-video w-full bg-black"
+              className="aspect-video max-h-[66dvh] w-full bg-black object-contain"
             />
-            <div className="px-5 py-3 text-xs text-slate-300">
+            <div className="shrink-0 px-4 py-2.5 text-xs text-slate-300 sm:px-5 sm:py-3">
               {modalFilm.techNote}
             </div>
           </div>
