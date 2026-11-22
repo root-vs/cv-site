@@ -4,9 +4,22 @@ import fs from 'fs';
 import path from 'path';
 import {defineConfig} from 'vite';
 
-export default defineConfig(() => {
+export default defineConfig(({command}) => {
+  const envBase = process.env.VITE_BASE_PATH;
+  const repoName = process.env.GITHUB_REPOSITORY?.split('/')[1];
+  const ghFallback = repoName && !repoName.endsWith('.github.io') ? `/${repoName}/` : '/';
+  const rawBase =
+    envBase !== undefined
+      ? envBase || '/'
+      : command === 'serve'
+      ? '/'
+      : process.env.GITHUB_ACTIONS
+      ? ghFallback
+      : '/cv-site/';
+  const base = rawBase === '/' ? '/' : `${rawBase.replace(/\/+$/, '')}/`;
+
   return {
-    base: '/cv-site/',
+    base,
     plugins: [
       react(),
       tailwindcss(),

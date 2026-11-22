@@ -41,6 +41,17 @@ const _swayEuler = new THREE.Euler();
 const _camDesiredPos = new THREE.Vector3();
 const _coreProjected = new THREE.Vector3();
 
+// Theme accent colors for central sphere breathing cycle (zero GC inside animation loop)
+const BREATH_ACCENT_TEAL = new THREE.Color(0x5eead4);
+const BREATH_ACCENT_SKY = new THREE.Color(0x38bdf8);
+const BREATH_ACCENT_VIOLET = new THREE.Color(0xa78bfa);
+const BREATH_ACCENT_EMERALD = new THREE.Color(0x34d399);
+const BREATH_ACCENT_ROSE = new THREE.Color(0xf472b6);
+const _breathCoreColor = new THREE.Color();
+const _breathMidColor = new THREE.Color();
+const _breathAuraColor = new THREE.Color();
+const _breathOrbitColor = new THREE.Color();
+
 // Custom Volumetric Light-Bleed & Depth-Separation ShaderPass
 const LightBleedShader = {
   uniforms: {
@@ -830,6 +841,13 @@ export function ObsidianBrainCanvas({
     let activeFlash = 0;
     let prevActiveNode = stateRef.current.activeNodeId;
     let wasExploded = false;
+    let contactProximitySmoothed = 0;
+    let breathPhase = 0;
+    let breathHarmonicPhase = 0;
+    let breathColorPhase = 0;
+    const prefersReducedMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     const afterDraw = (cb: () => void) => {
       const gl = renderer.getContext() as WebGL2RenderingContext;
@@ -957,33 +975,100 @@ export function ObsidianBrainCanvas({
         assemblyGroup.quaternion.slerp(_targetQuat, 1 - Math.exp(-3.6 * delta));
       }
 
-      // Multi-intensity luminous pulsing core sphere (always softly active inside fissures, full radiance when open)
-      const waveSlow = 0.5 + 0.5 * Math.sin(elapsed * 1.15);
-      const waveMed = 0.5 + 0.5 * Math.sin(elapsed * 2.8 + 0.7);
-      const waveFast = 0.5 + 0.5 * Math.sin(elapsed * 6.2 + 1.5);
-      const pulseMix = waveSlow * 0.38 + waveMed * 0.42 + waveFast * 0.2;
+      // Phase-continuous subtle breathing animation for the central sphere using theme accent colors;
+      // pulse frequency accelerates smoothly as the user navigates closer to the Contact section.
+      const targetContactProx = THREE.MathUtils.clamp(
+        Math.max(st.scrollProgress, st.activeChapter === 'contact' ? 1.0 : 0),
+        0,
+        1
+      );
+      contactProximitySmoothed = THREE.MathUtils.damp(
+        contactProximitySmoothed,
+        targetContactProx,
+        3.2,
+        delta
+      );
 
-      const sphereVisibility = THREE.MathUtils.lerp(0.22, 1.0, easedExp);
+      const breathFreq = THREE.MathUtils.lerp(
+        1.05,
+        4.45,
+        Math.pow(contactProximitySmoothed, 1.25)
+      );
+      breathPhase += delta * breathFreq;
+      breathHarmonicPhase += delta * (breathFreq * 1.65);
+      breathColorPhase += delta * (0.28 + contactProximitySmoothed * 0.45);
+
+      const rawBreath = 0.5 + 0.5 * Math.sin(breathPhase);
+      const breathEase = rawBreath * rawBreath * (3 - 2 * rawBreath);
+      const harmonicWave = 0.5 + 0.5 * Math.sin(breathHarmonicPhase);
+      const pulseMix = breathEase * 0.76 + harmonicWave * 0.24;
+
+      _breathCoreColor
+        .copy(BREATH_ACCENT_TEAL)
+        .lerp(BREATH_ACCENT_SKY, 0.35 * (0.5 + 0.5 * Math.sin(breathColorPhase)))
+        .lerp(BREATH_ACCENT_EMERALD, 0.28 * (0.5 + 0.5 * Math.cos(breathColorPhase * 0.85)));
+
+      _breathMidColor
+        .copy(BREATH_ACCENT_SKY)
+        .lerp(
+          BREATH_ACCENT_VIOLET,
+          0.25 + 0.45 * (0.5 + 0.5 * Math.sin(breathColorPhase + 1.1))
+        )
+        .lerp(BREATH_ACCENT_TEAL, 0.3 * breathEase);
+
+      _breathAuraColor
+        .copy(BREATH_ACCENT_VIOLET)
+        .lerp(BREATH_ACCENT_ROSE, (0.2 + 0.35 * contactProximitySmoothed) * breathEase)
+        .lerp(BREATH_ACCENT_TEAL, 0.22 * (1 - breathEase));
+
+      _breathOrbitColor
+        .copy(_breathCoreColor)
+        .lerp(BREATH_ACCENT_VIOLET, 0.35 * (1 - breathEase));
+
+      coreInnerMat.emissive.copy(_breathCoreColor);
+      coreMidMat.color.copy(_breathMidColor);
+      coreAuraMat.color.copy(_breathAuraColor);
+      coreOrbitMat.color.copy(_breathOrbitColor);
+      corePointLight.color.copy(_breathCoreColor);
+      mysticVioletLight.color.copy(_breathAuraColor);
+
+      const scaleAmp = prefersReducedMotion ? 0.15 : 1.0;
+      const sphereVisibility = THREE.MathUtils.lerp(0.24, 1.0, easedExp);
+
       coreInnerMesh.scale.setScalar(
-        sphereVisibility * (0.88 + pulseMix * 0.28 + activeFlash * 0.14)
+        sphereVisibility *
+          (0.91 + (breathEase * 0.16 + harmonicWave * 0.05) * scaleAmp + activeFlash * 0.12)
       );
       coreInnerMat.emissiveIntensity =
-        (1.2 + pulseMix * 2.2 + activeFlash * 1.6) * sphereVisibility;
+        (1.25 +
+          breathEase * 1.65 +
+          harmonicWave * 0.35 +
+          contactProximitySmoothed * 0.45 +
+          activeFlash * 1.4) *
+        sphereVisibility;
 
-      coreMidMesh.scale.setScalar(sphereVisibility * (0.88 + waveMed * 0.34));
-      coreMidMat.opacity = sphereVisibility * (0.14 + pulseMix * 0.22);
+      coreMidMesh.scale.setScalar(
+        sphereVisibility * (0.9 + (breathEase * 0.24 + harmonicWave * 0.06) * scaleAmp)
+      );
+      coreMidMat.opacity = sphereVisibility * (0.15 + breathEase * 0.2);
 
-      coreAuraMesh.scale.setScalar(sphereVisibility * (0.85 + waveSlow * 0.45));
-      coreAuraMat.opacity = sphereVisibility * (0.05 + waveSlow * 0.09);
+      coreAuraMesh.scale.setScalar(
+        sphereVisibility * (0.88 + breathEase * 0.32 * scaleAmp)
+      );
+      coreAuraMat.opacity = sphereVisibility * (0.055 + breathEase * 0.085);
 
-      coreOrbitRing.rotation.x = elapsed * 0.9;
-      coreOrbitRing.rotation.y = elapsed * 0.65;
-      coreOrbitMat.opacity = easedExp * (0.2 + pulseMix * 0.28);
+      const ringSpinScale = 1.0 + contactProximitySmoothed * 0.75;
+      coreOrbitRing.rotation.x += delta * 0.85 * ringSpinScale;
+      coreOrbitRing.rotation.y += delta * 0.62 * ringSpinScale;
+      coreOrbitMat.opacity = easedExp * (0.2 + pulseMix * 0.26);
 
       corePointLight.intensity =
-        THREE.MathUtils.lerp(0.9, 2.0, easedExp) + pulseMix * 2.2 + activeFlash * 1.4;
+        THREE.MathUtils.lerp(0.95, 2.0, easedExp) +
+        breathEase * 1.9 +
+        contactProximitySmoothed * 0.45 +
+        activeFlash * 1.3;
       mysticVioletLight.intensity =
-        THREE.MathUtils.lerp(0.5, 1.4, easedExp) + (1 - waveSlow) * 1.5;
+        THREE.MathUtils.lerp(0.55, 1.4, easedExp) + (1 - breathEase) * 1.4;
 
       // Subtle Volumetric Light Beams kept soft so CV typography stays razor-sharp
       for (let b = 0; b < beamsRuntime.length; b++) {
