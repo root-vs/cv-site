@@ -1,0 +1,66 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    color-scheme: dark;
+    --font-display: "Orbitron", sans-serif;
+    --font-sans: "Plus Jakarta Sans", system-ui, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  }
+
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+    background-color: #05080a;
+    color: #f1f5f9;
+    font-family: var(--font-sans);
+    overflow: hidden;
+    letter-spacing: 0.01em;
+  }
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.font-mono-tabular {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.story-scroll-container {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(94, 234, 212, 0.25) transparent;
+}
+
+.story-scroll-container::-webkit-scrollbar {
+  width: 5px;
+}
+
+.story-scroll-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.story-scroll-container::-webkit-scrollbar-thumb {
+  background: rgba(94, 234, 212, 0.22);
+  border-radius: 9999px;
+}
+
+.story-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(94, 234, 212, 0.45);
+}
+
+@keyframes cursor-blink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+.terminal-cursor {
+  animation: cursor-blink 0.85s steps(1) infinite;
+}
