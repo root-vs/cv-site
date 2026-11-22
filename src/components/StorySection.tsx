@@ -178,7 +178,7 @@ export function StorySection({
       id={id}
       ref={sectionRef}
       data-chapter={id}
-      className="pointer-events-none relative flex min-h-[100dvh] w-full snap-start md:snap-center items-center px-4 pt-20 pb-24 sm:px-8 sm:pt-24 sm:pb-28 lg:px-14 lg:pr-28"
+      className="pointer-events-none relative flex min-h-[100dvh] w-full snap-start md:snap-center items-center px-4 pt-20 pb-14 sm:px-8 sm:pt-24 sm:pb-16 lg:px-14 lg:pr-28"
     >
       {/* Subtle directional gradient scrim for crisp typography legibility over 3D space */}
       <div

@@ -130,7 +130,7 @@ export const CHAPTERS: {
 
 export const ABOUT_CONTENT = {
   quote: 'With great prompts comes great responsibility',
-  bio: 'Passionate about the full spectrum of computing — from AI and cybersecurity to networks and remote sensing — guided by a green-coding mindset, even when my GPU disagrees, and by a simple principle:',
+  bio: 'Passionate about computing — from AI and cybersecurity to networks and remote sensing — guided by a green-coding mindset (even when my GPU disagrees) and one principle:',
   promptGreeting: 'Hey! Scroll down to learn more about me …',
 };
 
@@ -177,26 +177,26 @@ export const EXPERIENCE_PHASES: ExperiencePhase[] = [
     activities: [
       {
         description:
-          'Performed production-level system activities, including security remediation, server and middleware configuration updates and integrations with external enterprise systems.',
+          'Production security remediation, server/middleware hardening, and enterprise integrations.',
         skills: [
           'Unix-like OS',
-          'PHP/Apache/Docker VM-based stacks',
-          'TLS-secured communications',
-          'load balancers',
-          'reverse proxies',
-          'DMZ network segments',
+          'PHP/Apache/Docker',
+          'TLS',
+          'Load Balancers',
+          'Reverse Proxy',
+          'DMZ',
           'Burp Suite',
           'OWASP',
-          'SCA & SAST analysis',
+          'SCA & SAST',
         ],
       },
       {
-        description: 'Development of a prototype for LLM-agnostic customer-care suite.',
-        skills: ['Agno', 'LLM agent orchestration', 'STT/TTS', 'LLM proxy'],
+        description: 'Prototype for an LLM-agnostic customer-care AI suite.',
+        skills: ['Agno', 'LLM Agent Orchestration', 'STT/TTS', 'LLM Proxy'],
       },
       {
         description:
-          'Led requirements analysis, solution design and development of high-volume messaging workflows, focusing on scalability, performance optimization and complex transformations to core business processes.',
+          'Architecture & optimization of high-volume messaging workflows and core data pipelines.',
         skills: [
           'C90',
           'Cassandra',
@@ -206,18 +206,17 @@ export const EXPERIENCE_PHASES: ExperiencePhase[] = [
           'SQLite',
           'Filebeat',
           'RabbitMQ',
-          'HTTPS/UCP/SMPP interfaces',
+          'HTTPS/UCP/SMPP',
         ],
       },
       {
-        description:
-          'Development and maintenance of advanced security features, including verification solutions such as CAPTCHA and OTP systems.',
+        description: 'Design & maintenance of user-verification modules (CAPTCHA, OTP).',
         skills: ['Oracle Apex', 'Oracle DB', 'Java', 'Cybersecurity'],
       },
       {
         description:
-          'Researched and engineered offline-capable, queryable knowledge bases to support AI-ready data workflows.',
-        skills: ['LLMs', 'LangChain', 'LangGraph', 'RAG pipelines', 'LLM Evaluation'],
+          'Offline-capable, queryable knowledge bases powering AI-ready RAG workflows.',
+        skills: ['LLMs', 'LangChain', 'LangGraph', 'RAG Pipelines', 'LLM Evaluation'],
       },
     ],
   },
@@ -229,22 +228,19 @@ export const EXPERIENCE_PHASES: ExperiencePhase[] = [
     period: 'May 2023 - Mar 2025',
     activities: [
       {
-        description:
-          'Analysis, development and vulnerability assessment of business process impacts.',
+        description: 'Business process impact analysis, development, and vulnerability assessment.',
         skills: ['Java', 'WebLogic', 'Oracle SQL', 'IVR'],
       },
       {
-        description:
-          'Creation of a GUI to automate development processes, integrating a local LLM as an end-user support tool.',
+        description: 'Dev-automation GUI integrating a local LLM for team & end-user support.',
         skills: ['Python', 'LLM', 'REST'],
       },
       {
-        description:
-          'Analysis and development of critical remediation actions on production DBs and application servers.',
+        description: 'Critical security & performance remediations on production DBs and app servers.',
         skills: ['Oracle SQL', 'HP-UX', 'Apache Reverse Proxy'],
       },
       {
-        description: 'Implementation of service migration from JMS queues to Kafka.',
+        description: 'Service migration from legacy JMS queues to event-driven Apache Kafka.',
         skills: ['JMS', 'Docker', 'Apache Kafka'],
       },
     ],
@@ -257,19 +253,17 @@ export const EXPERIENCE_PHASES: ExperiencePhase[] = [
     period: 'May 2021 - May 2023',
     activities: [
       {
-        description:
-          'Development of SW adapters to old processes with related vulnerability analysis.',
+        description: 'Legacy software adapters paired with targeted vulnerability analysis.',
         skills: ['WebLogic', 'EJB', 'MDB'],
       },
       {
-        description:
-          'Development of a data collection process and creation of related dashboards on Kibana.',
-        skills: ['ELK stack', 'Korn shell', 'Solaris'],
+        description: 'Data collection pipeline and real-time operational dashboards on Kibana.',
+        skills: ['ELK Stack', 'Korn Shell', 'Solaris'],
       },
       {
-        description: 'SW security returns on a client/server system.',
+        description: 'Client/server security modernization and TLS transport hardening.',
         skills: [
-          'From Java 4 to Java 8',
+          'Java 4 → 8',
           'Java RMI',
           'Oracle SQL',
           'TLS 1.2',
@@ -278,7 +272,7 @@ export const EXPERIENCE_PHASES: ExperiencePhase[] = [
         ],
       },
       {
-        description: 'Microservices development.',
+        description: 'Containerized microservices design and CI/CD delivery.',
         skills: ['Jenkins', 'Docker', 'OpenShift'],
       },
     ],
@@ -337,51 +331,46 @@ export const EDUCATION_DEGREES = {
       {
         id: 'proj-semantic',
         nodeId: 'proj-semantic',
-        title:
-          'Big Data & Semantic Web: Ontology design with machine learning classification for seismic events',
+        title: 'Big Data & Semantic Web: Seismic Classification Ontology',
         summary:
-          'Development of a high-level architecture combining machine-learning-based multiclass classification of seismic events with a semantic-web ontology designed to collect, structure and enrich predicted event information using Linked Open Data resources such as DBpedia.',
+          'Multiclass ML seismic event classification enriched with a Semantic Web ontology and Linked Open Data (DBpedia).',
       },
       {
         id: 'proj-telecom',
         nodeId: 'proj-telecom',
-        title: 'Telecommunication Networks: Packet manipulation with error correction',
+        title: 'Telecom Networks: Packet Manipulation & Error Correction',
         summary:
-          'The project aims to evaluate the effectiveness of packet manipulation attacks in which an attacker artificially modifies the fields of an IP packet. The retransmission protocol considered is the ARQ stop and wait protocol in full duplex mode and, in particular, in piggyback configuration and three correction mechanisms have been examined: parity bit, parity matrix, standard CRC.',
+          'Evaluated IP packet manipulation over full-duplex ARQ Stop-and-Wait (piggyback), comparing parity bit, parity matrix, and CRC defenses.',
       },
       {
         id: 'proj-robotics',
         nodeId: 'proj-robotics',
-        title: 'Cognitive Robotics: Competition',
-        summary:
-          'Realization of a software to automatically move a robot inside a simulated football field (ROS, Gazebo). The robot must:',
+        title: 'Cognitive Robotics: Autonomous Football Simulation',
+        summary: 'Autonomous ROS/Gazebo soccer robot pipeline:',
         bullets: [
-          'Move independently.',
-          'Identify the presence and position of the soccer ball (MobileNetSSDv2 object detector and detection by tracking).',
-          'Identify the presence and position of the football goal.',
-          'Identify the presence and position of obstacles (which can obstruct the ball).',
-          'Move the ball into the goal while avoiding obstacles.',
+          'Independent navigation and obstacle avoidance.',
+          'Real-time ball detection & tracking via MobileNetSSDv2.',
+          'Goal localization and controlled ball-to-goal scoring.',
         ],
       },
       {
         id: 'proj-vision',
         nodeId: 'proj-vision',
-        title: 'Artificial Vision: License Plate Detection and Recognition',
+        title: 'Artificial Vision: License Plate Detection & Recognition',
         summary:
-          'The aim of the project is to create an automatic system capable in the first instance of detecting the presence of license plates (buses, cars, mopeds, etc.) in different scenarios (in the wild, for example rain, snow, different angles and rotations, etc.), and subsequently recognize the characters that constitute them. System design:',
+          'End-to-end ALPR pipeline resilient to weather, angles, and motion:',
         bullets: [
-          'A subsystem responsible for detection (YOLOv3).',
-          'A subsystem that deals with image rectification (Xception).',
-          'A subsystem, Optical Character Recognition, which deals with the recognition of the characters present in the plate (pre-processing and CRNN).',
+          'In-the-wild plate detection (YOLOv3).',
+          'Perspective image rectification (Xception).',
+          'Pre-processing and OCR character recognition (CRNN).',
         ],
       },
       {
         id: 'proj-dp3t',
         nodeId: 'proj-dp3t',
-        title:
-          'Cybersecurity: Fake Contact Avoidance on a Decentralized Privacy-Preserving Contact Tracing System (DP3T) (COVID-19)',
+        title: 'Cybersecurity: DP3T Replay Attack Defense',
         summary:
-          'Realization of a security scheme for the DP3T tracking system capable of avoiding the possibility of an adversary reporting false contacts between the users of the application (replay attack). The objectives of the project is to prevent the malicious user from communicating false contacts between citizens: to prevent the opponent from disclosing one or more ephemeral codes of others, saved on their device, to the citizen with whom they will come into contact.',
+          'Security extension for decentralized privacy-preserving contact tracing (DP3T) blocking replay attacks and forged ephemeral contact reports.',
       },
     ] as EducationProject[],
   },

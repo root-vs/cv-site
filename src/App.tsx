@@ -8,6 +8,8 @@ import {
   MapPin,
   Phone,
   Search,
+  Volume2,
+  VolumeX,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { CinemaSection } from './components/CinemaSection';
@@ -16,7 +18,6 @@ import { ContactModal } from './components/ContactModal';
 import { EducationSection } from './components/EducationSection';
 import { ObsidianBrainCanvas } from './components/ObsidianBrainCanvas';
 import { RightNavRail } from './components/RightNavRail';
-import { SceneControlDock } from './components/SceneControlDock';
 import { StorySection, staggerItemVariants } from './components/StorySection';
 import { WorkExperienceSection } from './components/WorkExperienceSection';
 import {
@@ -70,9 +71,7 @@ export default function App() {
   });
 
   const [cubeManuallyExploded, setCubeManuallyExploded] = useState(false);
-  const [autoOrbit, setAutoOrbit] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
-  const [resetSignal, setResetSignal] = useState(0);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
   const [typedLength, setTypedLength] = useState(0);
@@ -226,10 +225,6 @@ export default function App() {
     setCubeManuallyExploded((prev) => !prev);
   }, []);
 
-  const handleResetView = useCallback(() => {
-    setResetSignal((s) => s + 1);
-  }, []);
-
   const handleToggleSound = useCallback(() => {
     setSoundEnabled((prev) => {
       const next = !prev;
@@ -258,8 +253,8 @@ export default function App() {
         cubeManuallyExploded={cubeManuallyExploded}
         onToggleCubeExplode={handleToggleCube}
         onSelectPiece={handleSelectPiece}
-        autoOrbit={autoOrbit}
-        resetSignal={resetSignal}
+        autoOrbit={true}
+        resetSignal={0}
         stageSide={CHAPTER_STAGE_SIDE[activeChapter]}
       />
 
@@ -339,7 +334,23 @@ export default function App() {
             </button>
           </nav>
 
-          <div className="shrink-0">
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={handleToggleSound}
+              aria-label={soundEnabled ? 'Mute tactile sound' : 'Enable tactile sound'}
+              aria-pressed={soundEnabled}
+              title={soundEnabled ? 'SFX On' : 'SFX Off'}
+              className="inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap shrink-0 rounded-lg border border-white/12 bg-white/5 px-2.5 py-1.5 text-xs font-medium text-slate-200 transition-colors hover:border-teal-300/40 hover:text-teal-200"
+            >
+              {soundEnabled ? (
+                <Volume2 className="h-3.5 w-3.5 text-teal-300" />
+              ) : (
+                <VolumeX className="h-3.5 w-3.5 text-slate-400" />
+              )}
+              <span className="hidden sm:inline">{soundEnabled ? 'SFX On' : 'SFX Off'}</span>
+            </button>
+
             <button
               type="button"
               onClick={() => setPaletteOpen(true)}
@@ -359,18 +370,6 @@ export default function App() {
       <RightNavRail
         activeChapter={activeChapter}
         onSelectChapter={(id) => scrollToChapter(id)}
-      />
-
-      {/* Collapsible 3D Control Dock */}
-      <SceneControlDock
-        activeNodeId={activeNodeId}
-        autoOrbit={autoOrbit}
-        onToggleAutoOrbit={() => setAutoOrbit((prev) => !prev)}
-        cubeExploded={cubeManuallyExploded || homeExitProgress > 0.2}
-        onToggleCube={handleToggleCube}
-        onResetView={handleResetView}
-        soundEnabled={soundEnabled}
-        onToggleSound={handleToggleSound}
       />
 
       {/* Scroll-Snap Story Container */}
@@ -489,11 +488,7 @@ export default function App() {
               &ldquo;{ABOUT_CONTENT.quote}&rdquo;
             </blockquote>
             <p className="text-sm leading-relaxed text-slate-200 sm:text-base md:text-lg">
-              {ABOUT_CONTENT.bio}{' '}
-              <span className="font-medium text-slate-50">
-                &ldquo;{ABOUT_CONTENT.quote}&rdquo;
-              </span>
-              .
+              {ABOUT_CONTENT.bio.replace(/ and one principle:$/, '.')}
             </p>
             <div className="flex flex-wrap items-center gap-2.5 border-t border-white/12 pt-4 text-xs font-medium tracking-wide text-slate-400">
               <span>AI &amp; Agents</span>
@@ -740,7 +735,7 @@ export default function App() {
           indexLabel="07"
           nodeLabel="Cube Impact · Contest Aziendali"
           title="Reply Film Festival"
-          subtitle="Experimental AI short films produced for Reply AI Film Contest — blending local ComfyUI pipelines, Hugging Face models, and Google Veo 2."
+          subtitle="Experimental AI short films produced for the Reply AI Film Contest (ComfyUI, Hugging Face & Google Veo 2)."
           align="center"
           accentColor="#f472b6"
           isActive={activeChapter === 'cinema'}

@@ -51,6 +51,7 @@ const _breathCoreColor = new THREE.Color();
 const _breathMidColor = new THREE.Color();
 const _breathAuraColor = new THREE.Color();
 const _breathOrbitColor = new THREE.Color();
+const _highlightEdgeWhite = new THREE.Color(0xf8fafc);
 
 // Custom Volumetric Light-Bleed & Depth-Separation ShaderPass
 const LightBleedShader = {
@@ -376,6 +377,10 @@ export function ObsidianBrainCanvas({
     // =========================================================================
     const assemblyGroup = new THREE.Group();
     scene.add(assemblyGroup);
+
+    // Focal light inside assemblyGroup illuminating only the active cubetto under inspection
+    const activePieceLight = new THREE.PointLight(0x5eead4, 0, 5.2, 1.8);
+    assemblyGroup.add(activePieceLight);
 
     // 1. MULTI-INTENSITY LUMINOUS PULSING SPHERE
     const sphereGroup = new THREE.Group();
@@ -1139,6 +1144,8 @@ export function ObsidianBrainCanvas({
         1
       );
 
+      let activeLightTargetIntensity = 0;
+
       for (let i = 0; i < piecesRuntime.length; i++) {
         const pr = piecesRuntime[i];
         const isActive = pr.node.id === st.activeNodeId && easedExp > 0.12;
@@ -1147,7 +1154,7 @@ export function ObsidianBrainCanvas({
         pr.surgeAmount = THREE.MathUtils.damp(
           pr.surgeAmount,
           isActive ? 1.0 : 0.0,
-          4.5,
+          5.0,
           delta
         );
         pr.hoverAmount = THREE.MathUtils.damp(
@@ -1161,7 +1168,7 @@ export function ObsidianBrainCanvas({
 
         if (easedExp > 0.05) {
           const surgeOffset =
-            pr.surgeAmount * 1.45 + pr.hoverAmount * (isActive ? 0.14 : 0.28);
+            pr.surgeAmount * 1.48 + pr.hoverAmount * (isActive ? 0.14 : 0.28);
           const floatOffset = Math.sin(elapsed * 1.2 + pr.phase) * 0.08 * easedExp;
           _vec3B.addScaledVector(pr.radialDir, surgeOffset + floatOffset);
         } else if (pr.hoverAmount > 0.005) {
@@ -1170,8 +1177,15 @@ export function ObsidianBrainCanvas({
 
         pr.group.position.copy(_vec3B);
 
-        const baseScale = isActive ? 1.34 + activeFlash * 0.12 : 1.0;
-        const targetScale = baseScale + pr.hoverAmount * (isActive ? 0.08 : 0.18);
+        if (isActive) {
+          activePieceLight.position.copy(_vec3B).addScaledVector(pr.radialDir, 0.72);
+          activePieceLight.color.copy(pr.baseColor);
+          activeLightTargetIntensity =
+            (2.4 + breathEase * 0.8 + activeFlash * 1.4) * easedExp;
+        }
+
+        const baseScale = isActive ? 1.38 + activeFlash * 0.14 : 1.0;
+        const targetScale = baseScale + pr.hoverAmount * (isActive ? 0.08 : 0.16);
         const nextScale = THREE.MathUtils.damp(pr.group.scale.x, targetScale, 8.5, delta);
         pr.group.scale.setScalar(nextScale);
 
@@ -1182,57 +1196,73 @@ export function ObsidianBrainCanvas({
           pr.group.rotation.set(0, 0, 0);
         }
 
-        // Progressive scroll illumination: active cubetto glows brighter while rest turn slightly matte & dimmer
+        // Strict scroll spotlight: ONLY the active cubetto under examination lights up vividly;
+        // all other cubetti smoothly recede into subdued, matte obsidian silhouettes.
         pr.bodyMat.emissive.copy(pr.baseColor);
-        pr.edgeMat.color.copy(pr.baseColor);
 
-        if (isActive) {
-          pr.bodyMat.opacity = 1.0;
-          pr.bodyMat.roughness = 0.12;
-          pr.bodyMat.clearcoat = 1.0;
-          pr.bodyMat.emissiveIntensity =
-            0.78 +
-            scrollFocusBoost * 0.56 +
-            Math.sin(elapsed * 3.0) * 0.16 +
-            activeFlash * 0.4 +
-            pr.hoverAmount * 0.22;
-          pr.edgeMat.opacity = 1.0;
-        } else {
-          const dimOpacity = THREE.MathUtils.lerp(1.0, 0.72, easedExp);
-          const dimRoughness = THREE.MathUtils.lerp(0.2, 0.58, easedExp);
-          const dimClearcoat = THREE.MathUtils.lerp(0.85, 0.22, easedExp);
-          const dimEmissive = THREE.MathUtils.lerp(0.12, 0.025, easedExp);
-          const dimEdge = THREE.MathUtils.lerp(0.45, 0.18, easedExp);
+        const activeBlend = THREE.MathUtils.clamp(pr.surgeAmount, 0, 1);
+        const focusWeight = Math.max(activeBlend, pr.hoverAmount * 0.82);
 
-          pr.bodyMat.opacity = THREE.MathUtils.lerp(dimOpacity, 0.98, pr.hoverAmount);
-          pr.bodyMat.roughness = THREE.MathUtils.lerp(dimRoughness, 0.16, pr.hoverAmount);
-          pr.bodyMat.clearcoat = THREE.MathUtils.lerp(dimClearcoat, 0.95, pr.hoverAmount);
-          pr.bodyMat.emissiveIntensity = THREE.MathUtils.lerp(
-            dimEmissive,
-            0.64,
-            pr.hoverAmount
-          );
-          pr.edgeMat.opacity = THREE.MathUtils.lerp(dimEdge, 0.92, pr.hoverAmount);
+        const baseOpacity = THREE.MathUtils.lerp(1.0, 0.4, easedExp);
+        const baseRoughness = THREE.MathUtils.lerp(0.2, 0.78, easedExp);
+        const baseClearcoat = THREE.MathUtils.lerp(0.85, 0.08, easedExp);
+        const baseEnv = THREE.MathUtils.lerp(1.0, 0.22, easedExp);
+        const baseIridescence = isSoftwareGl ? 0 : THREE.MathUtils.lerp(0.88, 0.12, easedExp);
+        const baseEmissive = THREE.MathUtils.lerp(0.11, 0.004, easedExp);
+        const baseEdgeOpacity = THREE.MathUtils.lerp(0.42, 0.09, easedExp);
+
+        const activeEmissive =
+          1.25 +
+          scrollFocusBoost * 0.75 +
+          breathEase * 0.22 +
+          activeFlash * 0.48 +
+          pr.hoverAmount * 0.2;
+
+        pr.bodyMat.opacity = THREE.MathUtils.lerp(baseOpacity, 1.0, focusWeight);
+        pr.bodyMat.roughness = THREE.MathUtils.lerp(baseRoughness, 0.09, focusWeight);
+        pr.bodyMat.clearcoat = THREE.MathUtils.lerp(baseClearcoat, 1.0, focusWeight);
+        pr.bodyMat.envMapIntensity = THREE.MathUtils.lerp(baseEnv, 1.45, focusWeight);
+        if (!isSoftwareGl) {
+          pr.bodyMat.iridescence = THREE.MathUtils.lerp(baseIridescence, 1.0, focusWeight);
         }
+        pr.bodyMat.emissiveIntensity = THREE.MathUtils.lerp(
+          baseEmissive,
+          activeBlend > 0.15 ? activeEmissive : 0.72,
+          focusWeight
+        );
+
+        pr.edgeMat.color.copy(pr.baseColor).lerp(_highlightEdgeWhite, activeBlend * 0.35);
+        pr.edgeMat.opacity = THREE.MathUtils.lerp(baseEdgeOpacity, 1.0, focusWeight);
 
         // Tether from pulsing center sphere -> cubetto
         posAttr.setXYZ(i * 2, 0, 0, 0);
         posAttr.setXYZ(i * 2 + 1, _vec3B.x, _vec3B.y, _vec3B.z);
 
-        if (isActive) {
-          colAttr.setXYZ(i * 2, 0.95, 1.0, 0.98);
-          colAttr.setXYZ(i * 2 + 1, pr.baseColor.r, pr.baseColor.g, pr.baseColor.b);
-        } else {
-          const tetherDim = Math.max(0.22, pr.hoverAmount * 0.75);
-          colAttr.setXYZ(i * 2, 0.37 * tetherDim, 0.92 * tetherDim, 0.83 * tetherDim);
-          colAttr.setXYZ(
-            i * 2 + 1,
-            pr.baseColor.r * tetherDim,
-            pr.baseColor.g * tetherDim,
-            pr.baseColor.b * tetherDim
-          );
-        }
+        const tetherGain = THREE.MathUtils.lerp(
+          Math.max(0.08, pr.hoverAmount * 0.75),
+          1.15,
+          activeBlend
+        );
+        colAttr.setXYZ(
+          i * 2,
+          THREE.MathUtils.lerp(0.37, 0.95, activeBlend) * tetherGain,
+          THREE.MathUtils.lerp(0.92, 1.0, activeBlend) * tetherGain,
+          THREE.MathUtils.lerp(0.83, 0.98, activeBlend) * tetherGain
+        );
+        colAttr.setXYZ(
+          i * 2 + 1,
+          pr.baseColor.r * tetherGain,
+          pr.baseColor.g * tetherGain,
+          pr.baseColor.b * tetherGain
+        );
       }
+
+      activePieceLight.intensity = THREE.MathUtils.damp(
+        activePieceLight.intensity,
+        activeLightTargetIntensity,
+        6.5,
+        delta
+      );
 
       posAttr.needsUpdate = true;
       colAttr.needsUpdate = true;
@@ -1363,7 +1393,7 @@ export function ObsidianBrainCanvas({
       />
 
       {hoveredPiece && (
-        <div className="pointer-events-none fixed bottom-20 left-1/2 z-20 max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-lg border border-teal-400/35 bg-[#060c10]/95 px-3.5 py-2 text-center shadow-2xl sm:bottom-24 sm:px-4">
+        <div className="pointer-events-none fixed bottom-5 left-1/2 z-20 max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-lg border border-teal-400/35 bg-[#060c10]/95 px-3.5 py-2 text-center shadow-2xl sm:bottom-7 sm:px-4">
           <div className="truncate text-xs font-semibold text-teal-200">{hoveredPiece.title}</div>
           <div className="mt-0.5 truncate text-[11px] text-slate-400">
             {hoveredPiece.meta || hoveredPiece.category} · Click to inspect
