@@ -22,7 +22,17 @@
       rel="stylesheet"
     />
   </head>
-  <body class="bg-[#05080a] text-slate-100 antialiased selection:bg-teal-400/25 selection:text-teal-200">
+  <body class="bg-[#f4f4f5] text-zinc-950 antialiased selection:bg-zinc-950/15 selection:text-zinc-950 dark:bg-[#05080a] dark:text-slate-100 dark:selection:bg-teal-400/25 dark:selection:text-teal-200">
+    <script>
+      try {
+        var t = localStorage.getItem('vs-cube-theme');
+        if (t === 'light') {
+          document.documentElement.classList.remove('dark');
+        } else {
+          document.documentElement.classList.add('dark');
+        }
+      } catch (e) {}
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

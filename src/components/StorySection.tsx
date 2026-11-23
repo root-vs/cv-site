@@ -1,6 +1,7 @@
 import { ReactNode, useEffect, useRef } from 'react';
 import { motion, useReducedMotion, type Variants } from 'motion/react';
 import { ChapterId } from '../data/cvVault';
+import type { CubeThemeMode } from './ObsidianBrainCanvas';
 
 interface StorySectionProps {
   id: ChapterId;
@@ -9,6 +10,8 @@ interface StorySectionProps {
   subtitle?: string;
   nodeLabel?: string;
   accentColor?: string;
+  lightAccentColor?: string;
+  theme?: CubeThemeMode;
   isActive: boolean;
   focusProximity: number; // 1 = center of viewport, 0 = far
   align?: 'center' | 'left' | 'right';
@@ -18,6 +21,14 @@ interface StorySectionProps {
 }
 
 const EASE_OUT_EXPO: [number, number, number, number] = [0.16, 1, 0.3, 1];
+
+function hexToRgbTuple(hex: string): [number, number, number] {
+  const clean = hex.replace('#', '');
+  const full = clean.length === 3 ? clean.replace(/(.)/g, '$1$1') : clean;
+  const num = parseInt(full, 16);
+  if (Number.isNaN(num)) return [94, 234, 212];
+  return [(num >> 16) & 255, (num >> 8) & 255, num & 255];
+}
 
 export const staggerContainerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -59,6 +70,8 @@ export function StorySection({
   subtitle,
   nodeLabel,
   accentColor = '#5eead4',
+  lightAccentColor = '#09090b',
+  theme = 'obsidian',
   isActive,
   focusProximity,
   align = 'center',
@@ -69,10 +82,14 @@ export function StorySection({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const proximityRef = useRef(focusProximity);
   const activeRef = useRef(isActive);
+  const themeRef = useRef(theme);
+  const accentRgbRef = useRef<[number, number, number]>(hexToRgbTuple(accentColor));
   const prefersReducedMotion = useReducedMotion();
 
   proximityRef.current = focusProximity;
   activeRef.current = isActive;
+  themeRef.current = theme;
+  accentRgbRef.current = hexToRgbTuple(accentColor);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -118,6 +135,8 @@ export function StorySection({
 
       const prox = proximityRef.current;
       const active = activeRef.current;
+      const isLight = themeRef.current === 'light';
+      const [r, g, b] = accentRgbRef.current;
 
       const visibleCount = Math.round(10 + prox * (MAX_PARTICLES - 10));
       const speedMult = (active ? 1.85 : 0.7) * (0.45 + prox * 1.15);
@@ -137,8 +156,10 @@ export function StorySection({
         if (p.x < -0.05) p.x = 1.05;
         if (p.x > 1.05) p.x = -0.05;
 
-        const opacity = p.alpha * (0.2 + prox * 0.8);
-        ctx.fillStyle = `rgba(94, 234, 212, ${opacity.toFixed(3)})`;
+        const opacity = p.alpha * (0.2 + prox * 0.8) * (isLight ? 0.55 : 1.0);
+        ctx.fillStyle = isLight
+          ? `rgba(24, 24, 27, ${opacity.toFixed(3)})`
+          : `rgba(${r}, ${g}, ${b}, ${opacity.toFixed(3)})`;
         ctx.font = `500 ${p.size}px "JetBrains Mono", monospace`;
         ctx.fillText(p.char, p.x * w, p.y * h);
       }
@@ -157,6 +178,7 @@ export function StorySection({
   const clampedProx = Math.max(0, Math.min(1, focusProximity));
   const sectionOpacity = prefersReducedMotion ? 1 : 0.16 + clampedProx * 0.84;
   const sectionScale = prefersReducedMotion ? 1 : 0.92 + clampedProx * 0.08;
+  const effectiveAccent = theme === 'light' ? lightAccentColor : accentColor;
 
   const alignClasses =
     align === 'left'
@@ -168,10 +190,10 @@ export function StorySection({
   // Directional readability gradient behind content on desktop, balanced full scrim on mobile/tablet
   const directionalScrim =
     align === 'left'
-      ? 'bg-[#04070a]/72 lg:bg-transparent lg:bg-gradient-to-r lg:from-[#04070a]/96 lg:via-[#04070a]/75 lg:to-transparent'
+      ? 'bg-[#f4f4f5]/84 dark:bg-[#04070a]/72 lg:bg-transparent lg:dark:bg-transparent lg:bg-gradient-to-r lg:from-[#f4f4f5]/95 lg:via-[#f4f4f5]/78 lg:to-transparent lg:dark:from-[#04070a]/96 lg:dark:via-[#04070a]/75 lg:dark:to-transparent'
       : align === 'right'
-      ? 'bg-[#04070a]/72 lg:bg-transparent lg:bg-gradient-to-l lg:from-[#04070a]/96 lg:via-[#04070a]/75 lg:to-transparent'
-      : 'bg-radial from-[#04070a]/88 via-[#04070a]/62 to-[#04070a]/25';
+      ? 'bg-[#f4f4f5]/84 dark:bg-[#04070a]/72 lg:bg-transparent lg:dark:bg-transparent lg:bg-gradient-to-l lg:from-[#f4f4f5]/95 lg:via-[#f4f4f5]/78 lg:to-transparent lg:dark:from-[#04070a]/96 lg:dark:via-[#04070a]/75 lg:dark:to-transparent'
+      : 'bg-radial from-[#f4f4f5]/92 via-[#f4f4f5]/72 to-[#f4f4f5]/30 dark:from-[#04070a]/88 dark:via-[#04070a]/62 dark:to-[#04070a]/25';
 
   return (
     <section
@@ -211,9 +233,14 @@ export function StorySection({
           {(title || nodeLabel) && (
             <motion.div variants={staggerItemVariants} className="mb-5 sm:mb-6">
               {nodeLabel && (
-                <div className="mb-2 flex items-center gap-2.5 text-xs font-medium tracking-wider text-slate-400">
+                <div className="mb-2 flex items-center gap-2.5 text-xs font-medium tracking-wider text-zinc-600 dark:text-slate-400">
                   {indexLabel && (
-                    <span className="font-mono-tabular text-teal-300">{indexLabel}.</span>
+                    <span
+                      className="font-mono-tabular font-semibold"
+                      style={{ color: effectiveAccent }}
+                    >
+                      {indexLabel}.
+                    </span>
                   )}
                   <span>{nodeLabel}</span>
                 </div>
@@ -223,20 +250,23 @@ export function StorySection({
                 <div className="flex items-center gap-3 sm:gap-3.5">
                   <span
                     aria-hidden="true"
-                    className="h-2.5 w-2.5 shrink-0 rounded-full"
+                    className="h-2.5 w-2.5 shrink-0 rounded-full transition-shadow duration-300"
                     style={{
-                      backgroundColor: accentColor,
-                      boxShadow: `0 0 14px ${accentColor}, 0 0 28px ${accentColor}99`,
+                      backgroundColor: effectiveAccent,
+                      boxShadow:
+                        theme === 'light'
+                          ? `0 0 0 3px ${effectiveAccent}24`
+                          : `0 0 14px ${accentColor}, 0 0 28px ${accentColor}99`,
                     }}
                   />
-                  <h2 className="font-display text-[clamp(1.625rem,3.2vw,2.5rem)] leading-[1.15] font-bold tracking-tight text-balance text-slate-50">
+                  <h2 className="font-display text-[clamp(1.625rem,3.2vw,2.5rem)] leading-[1.15] font-bold tracking-tight text-balance text-zinc-950 dark:text-slate-50">
                     {title}
                   </h2>
                 </div>
               )}
 
               {subtitle && (
-                <p className="mt-2.5 max-w-2xl text-sm leading-relaxed text-slate-300 sm:text-base">
+                <p className="mt-2.5 max-w-2xl text-sm leading-relaxed text-zinc-700 dark:text-slate-300 sm:text-base">
                   {subtitle}
                 </p>
               )}

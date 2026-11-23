@@ -10,12 +10,14 @@ import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { SSAOPass } from 'three/addons/postprocessing/SSAOPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import {
-  CATEGORY_COLORS,
+  CHAPTER_PALETTES,
   ChapterId,
   CUBE_PIECES,
   CubePieceNode,
 } from '../data/cvVault';
 import { soundEngine } from '../utils/soundEngine';
+
+export type CubeThemeMode = 'obsidian' | 'light';
 
 interface ObsidianBrainCanvasProps {
   activeChapter: ChapterId;
@@ -28,6 +30,7 @@ interface ObsidianBrainCanvasProps {
   autoOrbit: boolean;
   resetSignal: number;
   stageSide: 'right' | 'left' | 'center';
+  theme: CubeThemeMode;
 }
 
 // Pre-allocated scratch objects at module scope (zero GC inside animation loop)
@@ -41,16 +44,32 @@ const _swayEuler = new THREE.Euler();
 const _camDesiredPos = new THREE.Vector3();
 const _coreProjected = new THREE.Vector3();
 
-// Theme accent colors for central sphere breathing cycle (zero GC inside animation loop)
+// Theme accent colors for central sphere breathing & dual-theme transitions (zero GC in loop)
 const BREATH_ACCENT_TEAL = new THREE.Color(0x5eead4);
 const BREATH_ACCENT_SKY = new THREE.Color(0x38bdf8);
 const BREATH_ACCENT_VIOLET = new THREE.Color(0xa78bfa);
 const BREATH_ACCENT_EMERALD = new THREE.Color(0x34d399);
 const BREATH_ACCENT_ROSE = new THREE.Color(0xf472b6);
+const _obsidianBg = new THREE.Color(0x04070a);
+const _lightBg = new THREE.Color(0xf4f4f5);
+const _hemiObsidianSky = new THREE.Color(0xa5b4fc);
+const _hemiLightSky = new THREE.Color(0xffffff);
+const _hemiObsidianGround = new THREE.Color(0x04070a);
+const _hemiLightGround = new THREE.Color(0xd4d4d8);
+const _cubettoDarkBody = new THREE.Color(0x080d14);
+const _cubettoLightBody = new THREE.Color(0x27272a);
+const _cubettoLightActiveBody = new THREE.Color(0x111827);
+const _lightEdgeMuted = new THREE.Color(0x52525b);
+const _lightCoreCenter = new THREE.Color(0x09090b);
+const _darkCoreCenter = new THREE.Color(0xf0fdfa);
+const _activeChapterTargetColor = new THREE.Color(0x5eead4);
+const _activeChapterColor = new THREE.Color(0x5eead4);
+const _activeChapterLightColor = new THREE.Color(0x09090b);
 const _breathCoreColor = new THREE.Color();
 const _breathMidColor = new THREE.Color();
 const _breathAuraColor = new THREE.Color();
 const _breathOrbitColor = new THREE.Color();
+const _pieceEdgeTarget = new THREE.Color();
 const _highlightEdgeWhite = new THREE.Color(0xf8fafc);
 
 // Custom Volumetric Light-Bleed & Depth-Separation ShaderPass
@@ -61,6 +80,7 @@ const LightBleedShader = {
     uTexelSize: { value: new THREE.Vector2(1 / 1280, 1 / 720) },
     uExplosion: { value: 0.0 },
     uPulse: { value: 0.5 },
+    uThemeLight: { value: 0.0 },
   },
   vertexShader: /* glsl */ `
     varying vec2 vUv;
@@ -75,6 +95,7 @@ const LightBleedShader = {
     uniform vec2 uTexelSize;
     uniform float uExplosion;
     uniform float uPulse;
+    uniform float uThemeLight;
     varying vec2 vUv;
 
     float luma(vec3 c) {
@@ -123,7 +144,7 @@ const LightBleedShader = {
       float bleedStrength = 0.11 + uPulse * 0.05 + uExplosion * 0.04;
       vec3 mysticTint = mix(vec3(0.68, 1.0, 0.96), vec3(0.84, 0.75, 1.0), smoothstep(0.05, 0.55, distToCore));
 
-      vec3 lightBleed = radialAccum * radialAtten * bleedStrength * mysticTint + edgeHalo * 0.06;
+      vec3 lightBleed = (radialAccum * radialAtten * bleedStrength * mysticTint + edgeHalo * 0.06) * (1.0 - uThemeLight);
       gl_FragColor = vec4(base.rgb + lightBleed, base.a);
     }
   `,
@@ -256,6 +277,7 @@ export function ObsidianBrainCanvas({
   autoOrbit,
   resetSignal,
   stageSide,
+  theme,
 }: ObsidianBrainCanvasProps) {
   const mountRef = useRef<HTMLDivElement | null>(null);
   const [hoveredPiece, setHoveredPiece] = useState<CubePieceNode | null>(null);
@@ -272,6 +294,7 @@ export function ObsidianBrainCanvas({
     lastResetSignal: resetSignal,
     userInteracting: false,
     stageSide,
+    theme,
   });
 
   stateRef.current.activeChapter = activeChapter;
@@ -282,6 +305,7 @@ export function ObsidianBrainCanvas({
   stateRef.current.autoOrbit = autoOrbit;
   stateRef.current.resetSignal = resetSignal;
   stateRef.current.stageSide = stageSide;
+  stateRef.current.theme = theme;
 
   const callbacksRef = useRef({ onToggleCubeExplode, onSelectPiece });
   callbacksRef.current = { onToggleCubeExplode, onSelectPiece };
@@ -419,7 +443,7 @@ export function ObsidianBrainCanvas({
     const coreAuraMesh = new THREE.Mesh(coreAuraGeo, coreAuraMat);
     sphereGroup.add(coreAuraMesh);
 
-    const coreOrbitGeo = new THREE.TorusGeometry(0.66, 0.014, 12, 64);
+    const coreOrbitGeo = new THREE.TorusGeometry(0.66, 0.013, 12, 64);
     const coreOrbitMat = new THREE.MeshBasicMaterial({
       color: 0x5eead4,
       transparent: true,
@@ -429,6 +453,18 @@ export function ObsidianBrainCanvas({
     });
     const coreOrbitRing = new THREE.Mesh(coreOrbitGeo, coreOrbitMat);
     sphereGroup.add(coreOrbitRing);
+
+    const coreOrbitOuterGeo = new THREE.TorusGeometry(0.84, 0.008, 10, 84);
+    const coreOrbitOuterMat = new THREE.MeshBasicMaterial({
+      color: 0x38bdf8,
+      transparent: true,
+      opacity: 0.35,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    const coreOrbitRingOuter = new THREE.Mesh(coreOrbitOuterGeo, coreOrbitOuterMat);
+    coreOrbitRingOuter.rotation.set(0.65, 0.35, 0.4);
+    sphereGroup.add(coreOrbitRingOuter);
 
     // 2. VOLUMETRIC MYSTICAL LIGHT BEAMS POURING OUT THROUGH THE FISSURES
     const beamTexture = createVolumetricBeamTexture();
@@ -614,8 +650,7 @@ export function ObsidianBrainCanvas({
 
       pieceGroup.position.copy(assembledPos);
 
-      const catHex = CATEGORY_COLORS[piece.category];
-      const baseColor = new THREE.Color(catHex);
+      const baseColor = new THREE.Color(piece.tonalColor);
 
       // Mystical Iridescent Obsidian + Category Emissive Resonance
       const bodyMat = new THREE.MeshPhysicalMaterial({
@@ -711,6 +746,7 @@ export function ObsidianBrainCanvas({
         coreMidMesh.visible = visible;
         coreAuraMesh.visible = visible;
         coreOrbitRing.visible = visible;
+        coreOrbitRingOuter.visible = visible;
       }
     }
 
@@ -850,6 +886,7 @@ export function ObsidianBrainCanvas({
     let breathPhase = 0;
     let breathHarmonicPhase = 0;
     let breathColorPhase = 0;
+    let themeLightBlend = stateRef.current.theme === 'light' ? 1.0 : 0.0;
     const prefersReducedMotion =
       typeof window !== 'undefined' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -980,8 +1017,31 @@ export function ObsidianBrainCanvas({
         assemblyGroup.quaternion.slerp(_targetQuat, 1 - Math.exp(-3.6 * delta));
       }
 
-      // Phase-continuous subtle breathing animation for the central sphere using theme accent colors;
-      // pulse frequency accelerates smoothly as the user navigates closer to the Contact section.
+      const targetLight = st.theme === 'light' ? 1.0 : 0.0;
+      themeLightBlend = THREE.MathUtils.damp(themeLightBlend, targetLight, 6.0, delta);
+
+      // Smooth dual-theme environment transition (Deep Obsidian <-> Crisp Monochrome/Light)
+      (scene.background as THREE.Color).lerpColors(_obsidianBg, _lightBg, themeLightBlend);
+      if (scene.fog instanceof THREE.FogExp2) {
+        scene.fog.color.copy(scene.background as THREE.Color);
+        scene.fog.density = THREE.MathUtils.lerp(0.022, 0.011, themeLightBlend);
+      }
+      renderer.toneMappingExposure = THREE.MathUtils.lerp(1.28, 1.06, themeLightBlend);
+      hemiLight.color.lerpColors(_hemiObsidianSky, _hemiLightSky, themeLightBlend);
+      hemiLight.groundColor.lerpColors(_hemiObsidianGround, _hemiLightGround, themeLightBlend);
+      hemiLight.intensity = THREE.MathUtils.lerp(0.72, 1.48, themeLightBlend);
+      keyLight.intensity = THREE.MathUtils.lerp(2.0, 2.3, themeLightBlend);
+      rimLight.intensity = THREE.MathUtils.lerp(1.55, 1.15, themeLightBlend);
+      if (bloomPass) {
+        bloomPass.strength = THREE.MathUtils.lerp(0.14, 0.018, themeLightBlend);
+      }
+
+      // Phase-continuous subtle breathing animation for the central sphere using active chapter resonance
+      const chPalette = CHAPTER_PALETTES[st.activeChapter];
+      _activeChapterTargetColor.set(chPalette.obsidian);
+      _activeChapterColor.lerp(_activeChapterTargetColor, 1 - Math.exp(-4.0 * delta));
+      _activeChapterLightColor.set(chPalette.lightInk);
+
       const targetContactProx = THREE.MathUtils.clamp(
         Math.max(st.scrollProgress, st.activeChapter === 'contact' ? 1.0 : 0),
         0,
@@ -1010,30 +1070,39 @@ export function ObsidianBrainCanvas({
 
       _breathCoreColor
         .copy(BREATH_ACCENT_TEAL)
-        .lerp(BREATH_ACCENT_SKY, 0.35 * (0.5 + 0.5 * Math.sin(breathColorPhase)))
-        .lerp(BREATH_ACCENT_EMERALD, 0.28 * (0.5 + 0.5 * Math.cos(breathColorPhase * 0.85)));
+        .lerp(_activeChapterColor, 0.58)
+        .lerp(BREATH_ACCENT_SKY, 0.18 * (0.5 + 0.5 * Math.sin(breathColorPhase)))
+        .lerp(BREATH_ACCENT_EMERALD, 0.14 * (0.5 + 0.5 * Math.cos(breathColorPhase * 0.85)));
 
       _breathMidColor
-        .copy(BREATH_ACCENT_SKY)
+        .copy(_activeChapterColor)
         .lerp(
           BREATH_ACCENT_VIOLET,
-          0.25 + 0.45 * (0.5 + 0.5 * Math.sin(breathColorPhase + 1.1))
+          0.18 + 0.32 * (0.5 + 0.5 * Math.sin(breathColorPhase + 1.1))
         )
-        .lerp(BREATH_ACCENT_TEAL, 0.3 * breathEase);
+        .lerp(_breathCoreColor, 0.35 * breathEase);
 
       _breathAuraColor
         .copy(BREATH_ACCENT_VIOLET)
-        .lerp(BREATH_ACCENT_ROSE, (0.2 + 0.35 * contactProximitySmoothed) * breathEase)
-        .lerp(BREATH_ACCENT_TEAL, 0.22 * (1 - breathEase));
+        .lerp(_activeChapterColor, 0.42)
+        .lerp(BREATH_ACCENT_ROSE, (0.16 + 0.28 * contactProximitySmoothed) * breathEase);
 
       _breathOrbitColor
         .copy(_breathCoreColor)
-        .lerp(BREATH_ACCENT_VIOLET, 0.35 * (1 - breathEase));
+        .lerp(_activeChapterColor, 0.45);
 
+      if (themeLightBlend > 0.02) {
+        _breathCoreColor.lerp(_activeChapterLightColor, themeLightBlend * 0.85);
+        _breathMidColor.lerp(_activeChapterLightColor, themeLightBlend * 0.82);
+        _breathOrbitColor.lerp(_activeChapterLightColor, themeLightBlend * 0.9);
+      }
+
+      coreInnerMat.color.copy(_darkCoreCenter).lerp(_lightCoreCenter, themeLightBlend);
       coreInnerMat.emissive.copy(_breathCoreColor);
       coreMidMat.color.copy(_breathMidColor);
       coreAuraMat.color.copy(_breathAuraColor);
       coreOrbitMat.color.copy(_breathOrbitColor);
+      coreOrbitOuterMat.color.copy(_breathMidColor);
       corePointLight.color.copy(_breathCoreColor);
       mysticVioletLight.color.copy(_breathAuraColor);
 
@@ -1050,40 +1119,65 @@ export function ObsidianBrainCanvas({
           harmonicWave * 0.35 +
           contactProximitySmoothed * 0.45 +
           activeFlash * 1.4) *
-        sphereVisibility;
+        sphereVisibility *
+        THREE.MathUtils.lerp(1.0, 0.42, themeLightBlend);
 
       coreMidMesh.scale.setScalar(
         sphereVisibility * (0.9 + (breathEase * 0.24 + harmonicWave * 0.06) * scaleAmp)
       );
-      coreMidMat.opacity = sphereVisibility * (0.15 + breathEase * 0.2);
+      coreMidMat.blending =
+        themeLightBlend > 0.5 ? THREE.NormalBlending : THREE.AdditiveBlending;
+      coreMidMat.opacity =
+        sphereVisibility * (0.15 + breathEase * 0.2) * THREE.MathUtils.lerp(1.0, 0.35, themeLightBlend);
 
       coreAuraMesh.scale.setScalar(
         sphereVisibility * (0.88 + breathEase * 0.32 * scaleAmp)
       );
-      coreAuraMat.opacity = sphereVisibility * (0.055 + breathEase * 0.085);
+      coreAuraMat.blending =
+        themeLightBlend > 0.5 ? THREE.NormalBlending : THREE.AdditiveBlending;
+      coreAuraMat.opacity =
+        sphereVisibility * (0.055 + breathEase * 0.085) * THREE.MathUtils.lerp(1.0, 0.22, themeLightBlend);
 
       const ringSpinScale = 1.0 + contactProximitySmoothed * 0.75;
       coreOrbitRing.rotation.x += delta * 0.85 * ringSpinScale;
       coreOrbitRing.rotation.y += delta * 0.62 * ringSpinScale;
-      coreOrbitMat.opacity = easedExp * (0.2 + pulseMix * 0.26);
+      coreOrbitMat.blending =
+        themeLightBlend > 0.5 ? THREE.NormalBlending : THREE.AdditiveBlending;
+      coreOrbitMat.opacity =
+        easedExp * (0.24 + pulseMix * 0.28) * THREE.MathUtils.lerp(1.0, 1.2, themeLightBlend);
+
+      coreOrbitRingOuter.rotation.x -= delta * 0.42 * ringSpinScale;
+      coreOrbitRingOuter.rotation.z += delta * 0.56 * ringSpinScale;
+      coreOrbitOuterMat.blending =
+        themeLightBlend > 0.5 ? THREE.NormalBlending : THREE.AdditiveBlending;
+      coreOrbitOuterMat.opacity =
+        easedExp * (0.14 + pulseMix * 0.18) * THREE.MathUtils.lerp(1.0, 1.15, themeLightBlend);
 
       corePointLight.intensity =
-        THREE.MathUtils.lerp(0.95, 2.0, easedExp) +
-        breathEase * 1.9 +
-        contactProximitySmoothed * 0.45 +
-        activeFlash * 1.3;
+        (THREE.MathUtils.lerp(0.95, 2.0, easedExp) +
+          breathEase * 1.9 +
+          contactProximitySmoothed * 0.45 +
+          activeFlash * 1.3) *
+        THREE.MathUtils.lerp(1.0, 0.4, themeLightBlend);
       mysticVioletLight.intensity =
-        THREE.MathUtils.lerp(0.55, 1.4, easedExp) + (1 - breathEase) * 1.4;
+        (THREE.MathUtils.lerp(0.55, 1.4, easedExp) + (1 - breathEase) * 1.4) *
+        THREE.MathUtils.lerp(1.0, 0.35, themeLightBlend);
 
-      // Subtle Volumetric Light Beams kept soft so CV typography stays razor-sharp
-      for (let b = 0; b < beamsRuntime.length; b++) {
-        const bm = beamsRuntime[b];
-        const beamWave = 0.5 + 0.5 * Math.sin(elapsed * 1.9 + bm.phase);
-        const beamLength = THREE.MathUtils.lerp(0.28, 0.72, easedExp) * (0.85 + beamWave * 0.25);
-        const beamWidth = THREE.MathUtils.lerp(0.24, 0.68, easedExp) * (0.82 + beamWave * 0.2);
-        bm.group.scale.set(beamWidth, beamLength, beamWidth);
-        bm.mat.opacity =
-          THREE.MathUtils.lerp(0.06, 0.16, easedExp) * (0.55 + beamWave * 0.35 + activeFlash * 0.2);
+      // Subtle Volumetric Light Beams attenuated smoothly in Light theme so background stays pure
+      lightBeamsGroup.visible = themeLightBlend < 0.88;
+      if (lightBeamsGroup.visible) {
+        const beamThemeAtten = 1 - themeLightBlend;
+        for (let b = 0; b < beamsRuntime.length; b++) {
+          const bm = beamsRuntime[b];
+          const beamWave = 0.5 + 0.5 * Math.sin(elapsed * 1.9 + bm.phase);
+          const beamLength = THREE.MathUtils.lerp(0.28, 0.72, easedExp) * (0.85 + beamWave * 0.25);
+          const beamWidth = THREE.MathUtils.lerp(0.24, 0.68, easedExp) * (0.82 + beamWave * 0.2);
+          bm.group.scale.set(beamWidth, beamLength, beamWidth);
+          bm.mat.opacity =
+            THREE.MathUtils.lerp(0.06, 0.16, easedExp) *
+            (0.55 + beamWave * 0.35 + activeFlash * 0.2) *
+            beamThemeAtten;
+        }
       }
 
       // Inward-Flowing Particle Field surrounding the central glowing sphere (density reacts to scrollProgress)
@@ -1096,10 +1190,11 @@ export function ObsidianBrainCanvas({
         const mPos = moteGeo.attributes.position as THREE.BufferAttribute;
         const mCol = moteGeo.attributes.color as THREE.BufferAttribute;
         const speedScale = 1.0 + st.scrollProgress * 0.9;
+        moteMat.blending =
+          themeLightBlend > 0.5 ? THREE.NormalBlending : THREE.AdditiveBlending;
 
         for (let i = 0; i < activeMotes; i++) {
           const md = motesData[i];
-          // Move inward toward the central glowing sphere (0,0,0), accelerating closer to core
           const proximityBoost = 1.0 + Math.max(0, 1.5 - md.radius * 0.35);
           md.radius -= md.speed * delta * speedScale * proximityBoost;
           md.angle += md.swirlSpeed * delta;
@@ -1108,7 +1203,6 @@ export function ObsidianBrainCanvas({
             md.radius = md.maxRadius;
           }
 
-          // Subtle orbital swirl while moving inward
           const cosA = Math.cos(md.angle * 0.08);
           const sinA = Math.sin(md.angle * 0.08);
           const px = (md.dir.x * cosA - md.dir.z * sinA) * md.radius;
@@ -1117,25 +1211,28 @@ export function ObsidianBrainCanvas({
 
           mPos.setXYZ(i, px, py, pz);
 
-          // Brighten as mote nears the sphere, fade gracefully right at the edge
-          const edgeFade = THREE.MathUtils.smoothstep(md.radius, 0.35, 1.1) *
+          const edgeFade =
+            THREE.MathUtils.smoothstep(md.radius, 0.35, 1.1) *
             (1 - THREE.MathUtils.smoothstep(md.radius, md.maxRadius - 0.8, md.maxRadius));
+          const darkMoteShade = THREE.MathUtils.lerp(1.0, 0.22, themeLightBlend);
           mCol.setXYZ(
             i,
-            md.color.r * (0.4 + edgeFade * 0.8),
-            md.color.g * (0.4 + edgeFade * 0.8),
-            md.color.b * (0.4 + edgeFade * 0.8)
+            md.color.r * (0.4 + edgeFade * 0.8) * darkMoteShade,
+            md.color.g * (0.4 + edgeFade * 0.8) * darkMoteShade,
+            md.color.b * (0.4 + edgeFade * 0.8) * darkMoteShade
           );
         }
         mPos.needsUpdate = true;
         mCol.needsUpdate = true;
-        moteMat.opacity = 0.55 + st.scrollProgress * 0.35;
+        moteMat.opacity = (0.55 + st.scrollProgress * 0.35) * THREE.MathUtils.lerp(1.0, 0.65, themeLightBlend);
       }
 
       // Update 26 Mystical Cubetti + Radial Tethers
       const posAttr = tetherGeo.attributes.position as THREE.BufferAttribute;
       const colAttr = tetherGeo.attributes.color as THREE.BufferAttribute;
-      tetherMat.opacity = THREE.MathUtils.smoothstep(easedExp, 0.06, 0.42) * 0.85;
+      tetherMat.opacity =
+        THREE.MathUtils.smoothstep(easedExp, 0.06, 0.42) *
+        THREE.MathUtils.lerp(0.85, 0.62, themeLightBlend);
       tetherLines.visible = easedExp > 0.05;
 
       const scrollFocusBoost = THREE.MathUtils.clamp(
@@ -1181,7 +1278,9 @@ export function ObsidianBrainCanvas({
           activePieceLight.position.copy(_vec3B).addScaledVector(pr.radialDir, 0.72);
           activePieceLight.color.copy(pr.baseColor);
           activeLightTargetIntensity =
-            (2.4 + breathEase * 0.8 + activeFlash * 1.4) * easedExp;
+            (2.4 + breathEase * 0.8 + activeFlash * 1.4) *
+            easedExp *
+            THREE.MathUtils.lerp(1.0, 0.45, themeLightBlend);
         }
 
         const baseScale = isActive ? 1.38 + activeFlash * 0.14 : 1.0;
@@ -1196,27 +1295,52 @@ export function ObsidianBrainCanvas({
           pr.group.rotation.set(0, 0, 0);
         }
 
-        // Strict scroll spotlight: ONLY the active cubetto under examination lights up vividly;
-        // all other cubetti smoothly recede into subdued, matte obsidian silhouettes.
-        pr.bodyMat.emissive.copy(pr.baseColor);
-
+        // Strict scroll spotlight + dual-theme body & tonal edge resonance
         const activeBlend = THREE.MathUtils.clamp(pr.surgeAmount, 0, 1);
         const focusWeight = Math.max(activeBlend, pr.hoverAmount * 0.82);
 
-        const baseOpacity = THREE.MathUtils.lerp(1.0, 0.4, easedExp);
-        const baseRoughness = THREE.MathUtils.lerp(0.2, 0.78, easedExp);
+        pr.bodyMat.color
+          .copy(_cubettoDarkBody)
+          .lerp(
+            activeBlend > 0.15 ? _cubettoLightActiveBody : _cubettoLightBody,
+            themeLightBlend
+          );
+        pr.bodyMat.emissive.copy(pr.baseColor);
+
+        const baseOpacityObsidian = THREE.MathUtils.lerp(1.0, 0.4, easedExp);
+        const baseOpacityLight = THREE.MathUtils.lerp(1.0, 0.78, easedExp);
+        const baseOpacity = THREE.MathUtils.lerp(
+          baseOpacityObsidian,
+          baseOpacityLight,
+          themeLightBlend
+        );
+
+        const baseRoughness = THREE.MathUtils.lerp(
+          THREE.MathUtils.lerp(0.2, 0.78, easedExp),
+          0.42,
+          themeLightBlend * 0.55
+        );
         const baseClearcoat = THREE.MathUtils.lerp(0.85, 0.08, easedExp);
         const baseEnv = THREE.MathUtils.lerp(1.0, 0.22, easedExp);
-        const baseIridescence = isSoftwareGl ? 0 : THREE.MathUtils.lerp(0.88, 0.12, easedExp);
-        const baseEmissive = THREE.MathUtils.lerp(0.11, 0.004, easedExp);
-        const baseEdgeOpacity = THREE.MathUtils.lerp(0.42, 0.09, easedExp);
+        const baseIridescence = isSoftwareGl
+          ? 0
+          : THREE.MathUtils.lerp(0.88, 0.12, easedExp) * THREE.MathUtils.lerp(1.0, 0.4, themeLightBlend);
+        const baseEmissive =
+          THREE.MathUtils.lerp(0.11, 0.004, easedExp) *
+          THREE.MathUtils.lerp(1.0, 0.12, themeLightBlend);
+        const baseEdgeOpacity = THREE.MathUtils.lerp(
+          THREE.MathUtils.lerp(0.42, 0.09, easedExp),
+          THREE.MathUtils.lerp(0.48, 0.24, easedExp),
+          themeLightBlend
+        );
 
         const activeEmissive =
-          1.25 +
-          scrollFocusBoost * 0.75 +
-          breathEase * 0.22 +
-          activeFlash * 0.48 +
-          pr.hoverAmount * 0.2;
+          (1.25 +
+            scrollFocusBoost * 0.75 +
+            breathEase * 0.22 +
+            activeFlash * 0.48 +
+            pr.hoverAmount * 0.2) *
+          THREE.MathUtils.lerp(1.0, 0.52, themeLightBlend);
 
         pr.bodyMat.opacity = THREE.MathUtils.lerp(baseOpacity, 1.0, focusWeight);
         pr.bodyMat.roughness = THREE.MathUtils.lerp(baseRoughness, 0.09, focusWeight);
@@ -1227,11 +1351,16 @@ export function ObsidianBrainCanvas({
         }
         pr.bodyMat.emissiveIntensity = THREE.MathUtils.lerp(
           baseEmissive,
-          activeBlend > 0.15 ? activeEmissive : 0.72,
+          activeBlend > 0.15 ? activeEmissive : 0.72 * THREE.MathUtils.lerp(1.0, 0.42, themeLightBlend),
           focusWeight
         );
 
-        pr.edgeMat.color.copy(pr.baseColor).lerp(_highlightEdgeWhite, activeBlend * 0.35);
+        _pieceEdgeTarget
+          .copy(pr.baseColor)
+          .lerp(_lightEdgeMuted, themeLightBlend * (1 - focusWeight) * 0.85);
+        pr.edgeMat.color
+          .copy(_pieceEdgeTarget)
+          .lerp(_highlightEdgeWhite, activeBlend * 0.35 * (1 - themeLightBlend));
         pr.edgeMat.opacity = THREE.MathUtils.lerp(baseEdgeOpacity, 1.0, focusWeight);
 
         // Tether from pulsing center sphere -> cubetto
@@ -1243,17 +1372,18 @@ export function ObsidianBrainCanvas({
           1.15,
           activeBlend
         );
+        const tetherShade = THREE.MathUtils.lerp(1.0, 0.55, themeLightBlend);
         colAttr.setXYZ(
           i * 2,
-          THREE.MathUtils.lerp(0.37, 0.95, activeBlend) * tetherGain,
-          THREE.MathUtils.lerp(0.92, 1.0, activeBlend) * tetherGain,
-          THREE.MathUtils.lerp(0.83, 0.98, activeBlend) * tetherGain
+          THREE.MathUtils.lerp(0.37, 0.95, activeBlend) * tetherGain * tetherShade,
+          THREE.MathUtils.lerp(0.92, 1.0, activeBlend) * tetherGain * tetherShade,
+          THREE.MathUtils.lerp(0.83, 0.98, activeBlend) * tetherGain * tetherShade
         );
         colAttr.setXYZ(
           i * 2 + 1,
-          pr.baseColor.r * tetherGain,
-          pr.baseColor.g * tetherGain,
-          pr.baseColor.b * tetherGain
+          pr.baseColor.r * tetherGain * tetherShade,
+          pr.baseColor.g * tetherGain * tetherShade,
+          pr.baseColor.b * tetherGain * tetherShade
         );
       }
 
@@ -1287,6 +1417,7 @@ export function ObsidianBrainCanvas({
         );
         lightBleedPass.uniforms.uExplosion.value = easedExp;
         lightBleedPass.uniforms.uPulse.value = pulseMix;
+        lightBleedPass.uniforms.uThemeLight.value = themeLightBlend;
 
         composer.render();
       } else {
@@ -1350,6 +1481,8 @@ export function ObsidianBrainCanvas({
       coreAuraMat.dispose();
       coreOrbitGeo.dispose();
       coreOrbitMat.dispose();
+      coreOrbitOuterGeo.dispose();
+      coreOrbitOuterMat.dispose();
       beamPlaneGeo.dispose();
       beamTexture.dispose();
       beamsRuntime.forEach((b) => b.mat.dispose());
@@ -1375,13 +1508,13 @@ export function ObsidianBrainCanvas({
   }, []);
 
   return (
-    <div className="fixed inset-0 z-0 overflow-hidden bg-[#04070a]">
+    <div className="fixed inset-0 z-0 overflow-hidden bg-[#f4f4f5] transition-colors duration-300 dark:bg-[#04070a]">
       {webglUnavailable ? (
         <div
-          className="flex h-full w-full items-center justify-center bg-radial from-teal-950/30 via-[#04070a] to-[#04070a]"
+          className="flex h-full w-full items-center justify-center bg-radial from-zinc-200/70 via-[#f4f4f5] to-[#f4f4f5] dark:from-teal-950/30 dark:via-[#04070a] dark:to-[#04070a]"
           aria-hidden="true"
         >
-          <div className="h-24 w-24 rounded-full bg-teal-300/20 ring-1 ring-teal-300/40" />
+          <div className="h-24 w-24 rounded-full bg-zinc-950/10 ring-1 ring-zinc-950/25 dark:bg-teal-300/20 dark:ring-teal-300/40" />
         </div>
       ) : (
         <div ref={mountRef} className="h-full w-full" />
@@ -1389,13 +1522,20 @@ export function ObsidianBrainCanvas({
 
       <div
         aria-hidden="true"
-        className="pointer-events-none fixed inset-0 bg-radial from-transparent via-[#04070a]/12 to-[#04070a]/72"
+        className="pointer-events-none fixed inset-0 bg-radial from-transparent via-[#f4f4f5]/10 to-zinc-950/12 dark:from-transparent dark:via-[#04070a]/12 dark:to-[#04070a]/72"
       />
 
       {hoveredPiece && (
-        <div className="pointer-events-none fixed bottom-5 left-1/2 z-20 max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-lg border border-teal-400/35 bg-[#060c10]/95 px-3.5 py-2 text-center shadow-2xl sm:bottom-7 sm:px-4">
-          <div className="truncate text-xs font-semibold text-teal-200">{hoveredPiece.title}</div>
-          <div className="mt-0.5 truncate text-[11px] text-slate-400">
+        <div className="pointer-events-none fixed bottom-5 left-1/2 z-20 max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-lg border border-zinc-950/20 bg-white/95 px-3.5 py-2 text-center shadow-2xl dark:border-teal-400/35 dark:bg-[#060c10]/95 sm:bottom-7 sm:px-4">
+          <div className="flex items-center justify-center gap-2 truncate text-xs font-semibold text-zinc-950 dark:text-teal-200">
+            <span
+              aria-hidden="true"
+              className="h-2 w-2 shrink-0 rounded-full"
+              style={{ backgroundColor: hoveredPiece.tonalColor }}
+            />
+            <span className="truncate">{hoveredPiece.title}</span>
+          </div>
+          <div className="mt-0.5 truncate text-[11px] text-zinc-600 dark:text-slate-400">
             {hoveredPiece.meta || hoveredPiece.category} · Click to inspect
           </div>
         </div>

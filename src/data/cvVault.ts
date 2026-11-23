@@ -26,6 +26,7 @@ export interface CubePieceNode {
   title: string;
   category: VaultCategory;
   chapterId: ChapterId;
+  tonalColor: string;
   summary: string;
   gridPos: [number, number, number]; // {-1, 0, 1}^3 \ {(0,0,0)}
   explodedDistance: number; // distinct radial distance from center pulsing sphere
@@ -65,17 +66,35 @@ export interface CinemaFilm {
   techNote: string;
 }
 
+export interface ChapterPalette {
+  obsidian: string;
+  lightInk: string;
+  label: string;
+}
+
+export const CHAPTER_PALETTES: Record<ChapterId, ChapterPalette> = {
+  home: { obsidian: '#5eead4', lightInk: '#09090b', label: 'Core Obsidian' },
+  about: { obsidian: '#22d3ee', lightInk: '#0e7490', label: 'Cyan' },
+  skills: { obsidian: '#3b82f6', lightInk: '#1d4ed8', label: 'Cobalt Blue' },
+  experience: { obsidian: '#14b8a6', lightInk: '#0f766e', label: 'Deep Teal' },
+  certifications: { obsidian: '#a78bfa', lightInk: '#6d28d9', label: 'Amethyst Violet' },
+  publications: { obsidian: '#f59e0b', lightInk: '#b45309', label: 'Solar Amber' },
+  education: { obsidian: '#10b981', lightInk: '#047857', label: 'Emerald' },
+  cinema: { obsidian: '#f472b6', lightInk: '#be185d', label: 'Cinema Rose' },
+  contact: { obsidian: '#cbd5e1', lightInk: '#18181b', label: 'Titanium Slate' },
+};
+
 export const CATEGORY_COLORS: Record<VaultCategory, string> = {
-  core: '#5eead4',
-  about: '#2dd4bf',
-  skills: '#38bdf8',
-  experience: '#5eead4',
-  credentials: '#a78bfa',
-  research: '#f59e0b',
-  education: '#34d399',
-  projects: '#60a5fa',
-  cinema: '#f472b6',
-  contact: '#94a3b8',
+  core: CHAPTER_PALETTES.home.obsidian,
+  about: CHAPTER_PALETTES.about.obsidian,
+  skills: CHAPTER_PALETTES.skills.obsidian,
+  experience: CHAPTER_PALETTES.experience.obsidian,
+  credentials: CHAPTER_PALETTES.certifications.obsidian,
+  research: CHAPTER_PALETTES.publications.obsidian,
+  education: CHAPTER_PALETTES.education.obsidian,
+  projects: CHAPTER_PALETTES.education.obsidian,
+  cinema: CHAPTER_PALETTES.cinema.obsidian,
+  contact: CHAPTER_PALETTES.contact.obsidian,
 };
 
 export const EXECUTIVE_METRICS = [
@@ -84,21 +103,24 @@ export const EXECUTIVE_METRICS = [
     value: '5+ yrs',
     label: 'Enterprise Consulting',
     detail: 'Sytel Reply Rome · TIM & Poste Italiane',
-    accent: '#5eead4',
+    accent: CHAPTER_PALETTES.experience.obsidian,
+    lightAccent: CHAPTER_PALETTES.experience.lightInk,
   },
   {
     id: 'research-metric',
     value: 'IEEE',
     label: 'ICETCI 2021 Paper',
     detail: 'Multi-Agent Anomaly Detection',
-    accent: '#f59e0b',
+    accent: CHAPTER_PALETTES.publications.obsidian,
+    lightAccent: CHAPTER_PALETTES.publications.lightInk,
   },
   {
     id: 'certs-metric',
     value: '10 verified certs',
     label: 'Anthropic & Cloud Academy',
     detail: 'AI Systems · Cloud · Cyber',
-    accent: '#a78bfa',
+    accent: CHAPTER_PALETTES.certifications.obsidian,
+    lightAccent: CHAPTER_PALETTES.certifications.lightInk,
   },
 ] as const;
 
@@ -429,6 +451,7 @@ export const CUBE_PIECES: CubePieceNode[] = [
     title: 'About · Green-Coding Mindset',
     category: 'about',
     chapterId: 'about',
+    tonalColor: '#22d3ee',
     summary:
       'Full spectrum of computing from AI and cybersecurity to networks and remote sensing, guided by prompt responsibility.',
     gridPos: [0, 0, 1],
@@ -440,6 +463,7 @@ export const CUBE_PIECES: CubePieceNode[] = [
     title: 'Skills · Programming Languages',
     category: 'skills',
     chapterId: 'skills',
+    tonalColor: '#60a5fa',
     summary: 'C, Java, Python, Shell Scripting, Web Languages, Matlab.',
     gridPos: [1, 0, 1],
     explodedDistance: 2.85,
@@ -450,6 +474,7 @@ export const CUBE_PIECES: CubePieceNode[] = [
     title: 'Skills · Technologies & AI Stack',
     category: 'skills',
     chapterId: 'skills',
+    tonalColor: '#3b82f6',
     summary:
       'Docker, OpenShift, Oracle SQL, OS, Artificial Vision, LLM & RAG, Git, Jenkins, Earth Observation, Reverse Engineering, WebLogic.',
     gridPos: [1, 1, 0],
@@ -461,6 +486,7 @@ export const CUBE_PIECES: CubePieceNode[] = [
     title: 'Skills · Soft Skills',
     category: 'skills',
     chapterId: 'skills',
+    tonalColor: '#93c5fd',
     summary: 'Teamwork, Empathy, Problem Solving, Deadline Compliance.',
     gridPos: [1, -1, 1],
     explodedDistance: 3.45,
@@ -471,6 +497,7 @@ export const CUBE_PIECES: CubePieceNode[] = [
     title: 'Senior IT Consultant · Sytel Reply',
     category: 'experience',
     chapterId: 'experience',
+    tonalColor: '#2dd4bf',
     summary:
       'Mar 2025 - Current: Security remediation, LLM-agnostic customer-care suite, high-volume messaging, CAPTCHA/OTP, offline RAG.',
     gridPos: [-1, 0, 1],
@@ -482,6 +509,7 @@ export const CUBE_PIECES: CubePieceNode[] = [
     title: 'IT Consultant · Sytel Reply',
     category: 'experience',
     chapterId: 'experience',
+    tonalColor: '#14b8a6',
     summary:
       'May 2023 - Mar 2025: Vulnerability assessment, local LLM automation GUI, critical DB/server remediations, JMS to Kafka migration.',
     gridPos: [-1, 1, 0],
@@ -493,6 +521,7 @@ export const CUBE_PIECES: CubePieceNode[] = [
     title: 'Junior IT Consultant · Sytel Reply',
     category: 'experience',
     chapterId: 'experience',
+    tonalColor: '#0d9488',
     summary:
       'May 2021 - May 2023: WebLogic EJB/MDB adapters, ELK/Kibana dashboards on Solaris, Java 4-to-8 RMI TLS 1.2, OpenShift microservices.',
     gridPos: [-1, -1, 1],
@@ -504,6 +533,7 @@ export const CUBE_PIECES: CubePieceNode[] = [
     title: 'Anthropic Certifications (5)',
     category: 'credentials',
     chapterId: 'certifications',
+    tonalColor: '#a78bfa',
     summary:
       'Claude 101, Introduction to Claude Cowork, Claude Code in Action, AI Fluency: Framework & Foundations, Building with the Claude API.',
     gridPos: [0, -1, 1],
@@ -515,6 +545,7 @@ export const CUBE_PIECES: CubePieceNode[] = [
     title: 'Cloud Academy Certifications (5)',
     category: 'credentials',
     chapterId: 'certifications',
+    tonalColor: '#c4b5fd',
     summary:
       'TypeScript Zero to Hero, Docker Certified Associate (DCA), Cloud Architect Fundamentals, Cyber Primer, ML on GCP.',
     gridPos: [1, -1, 0],
@@ -526,6 +557,7 @@ export const CUBE_PIECES: CubePieceNode[] = [
     title: 'IEEE ICETCI 2021 Publication',
     category: 'research',
     chapterId: 'publications',
+    tonalColor: '#f59e0b',
     summary:
       'Sensing multi-agent system for anomaly detection on crop fields exploiting the phenological and historical context.',
     gridPos: [0, 1, 1],
@@ -537,6 +569,7 @@ export const CUBE_PIECES: CubePieceNode[] = [
     title: 'M.Sc. Computer Engineering · Salerno',
     category: 'education',
     chapterId: 'education',
+    tonalColor: '#10b981',
     summary:
       '2018 - 2021 (in English): Intelligent vegetation monitoring thesis with Earth Observation, Kafka, ML, Semantic Web & Ontologies.',
     gridPos: [0, 1, -1],
@@ -548,6 +581,7 @@ export const CUBE_PIECES: CubePieceNode[] = [
     title: 'B.Sc. Computer Engineering · Salerno',
     category: 'education',
     chapterId: 'education',
+    tonalColor: '#34d399',
     summary: '2014 - 2018: Responsive Web App for real-time feedback collection.',
     gridPos: [1, 1, -1],
     explodedDistance: 3.85,
@@ -558,6 +592,7 @@ export const CUBE_PIECES: CubePieceNode[] = [
     title: 'Big Data & Semantic Web: Seismic Ontology',
     category: 'projects',
     chapterId: 'education',
+    tonalColor: '#6ee7b7',
     summary:
       'ML multiclass seismic classification enriched via Semantic Web ontologies and Linked Open Data (DBpedia).',
     gridPos: [-1, 1, -1],
@@ -569,6 +604,7 @@ export const CUBE_PIECES: CubePieceNode[] = [
     title: 'Telecom Networks: ARQ & CRC Security',
     category: 'projects',
     chapterId: 'education',
+    tonalColor: '#059669',
     summary:
       'Packet manipulation evaluation on full-duplex ARQ Stop-and-Wait piggyback with parity bit, parity matrix & CRC.',
     gridPos: [1, 0, -1],
@@ -580,6 +616,7 @@ export const CUBE_PIECES: CubePieceNode[] = [
     title: 'Cognitive Robotics: ROS & Gazebo',
     category: 'projects',
     chapterId: 'education',
+    tonalColor: '#a7f3d0',
     summary:
       'Autonomous robot navigation in simulated football field with MobileNetSSDv2 tracking and obstacle avoidance.',
     gridPos: [-1, 0, -1],
@@ -591,6 +628,7 @@ export const CUBE_PIECES: CubePieceNode[] = [
     title: 'Artificial Vision: ALPR (YOLOv3 + CRNN)',
     category: 'projects',
     chapterId: 'education',
+    tonalColor: '#047857',
     summary:
       'License plate detection (YOLOv3), image rectification (Xception), and OCR character recognition (CRNN).',
     gridPos: [0, 1, 0],
@@ -602,6 +640,7 @@ export const CUBE_PIECES: CubePieceNode[] = [
     title: 'Cybersecurity: DP3T Replay Defense',
     category: 'projects',
     chapterId: 'education',
+    tonalColor: '#22c55e',
     summary:
       'Decentralized privacy-preserving contact tracing security scheme preventing fake contact replay attacks.',
     gridPos: [-1, 1, 1],
@@ -613,6 +652,7 @@ export const CUBE_PIECES: CubePieceNode[] = [
     title: 'OUT-OF-OFFICE · Reply Film Contest 2026',
     category: 'cinema',
     chapterId: 'cinema',
+    tonalColor: '#f472b6',
     summary:
       'Local ComfyUI pipeline and multiple Hugging Face video models exploring machine-made surrealism.',
     gridPos: [0, -1, -1],
@@ -624,6 +664,7 @@ export const CUBE_PIECES: CubePieceNode[] = [
     title: 'GAIA · Reply Film Contest 2025',
     category: 'cinema',
     chapterId: 'cinema',
+    tonalColor: '#f9a8d4',
     summary:
       'Generated with Google Veo 2, paired with a custom pipeline for music, voice, and sound design.',
     gridPos: [-1, -1, -1],
@@ -635,6 +676,7 @@ export const CUBE_PIECES: CubePieceNode[] = [
     title: 'Contact · Avellino, IT',
     category: 'contact',
     chapterId: 'contact',
+    tonalColor: '#cbd5e1',
     summary: 'valerioserino.info@gmail.com · (+39) 3469554008 · LinkedIn & PDF Resume.',
     gridPos: [0, 0, -1],
     explodedDistance: 2.45,
@@ -645,6 +687,7 @@ export const CUBE_PIECES: CubePieceNode[] = [
     title: 'Core · LLM & Agent Orchestration',
     category: 'core',
     chapterId: 'skills',
+    tonalColor: '#2563eb',
     summary: 'Agno, LangChain, LangGraph, RAG pipelines, LLM proxy & evaluation.',
     gridPos: [1, 0, 0],
     explodedDistance: 3.15,
@@ -655,6 +698,7 @@ export const CUBE_PIECES: CubePieceNode[] = [
     title: 'Core · Enterprise Security & TLS',
     category: 'core',
     chapterId: 'experience',
+    tonalColor: '#5eead4',
     summary: 'OWASP, Burp Suite, SCA & SAST, DMZ, TLS 1.2, CAPTCHA & OTP.',
     gridPos: [-1, 0, 0],
     explodedDistance: 3.3,
@@ -665,6 +709,7 @@ export const CUBE_PIECES: CubePieceNode[] = [
     title: 'Core · Distributed Messaging & DBs',
     category: 'core',
     chapterId: 'experience',
+    tonalColor: '#0f766e',
     summary: 'Apache Kafka, RabbitMQ, Cassandra, Redis, MongoDB, Oracle DB.',
     gridPos: [0, -1, 0],
     explodedDistance: 3.75,
@@ -675,6 +720,7 @@ export const CUBE_PIECES: CubePieceNode[] = [
     title: 'Core · Remote Sensing & Vision',
     category: 'core',
     chapterId: 'publications',
+    tonalColor: '#fcd34d',
     summary: 'Earth Observation phenological anomaly detection & YOLOv3/CRNN.',
     gridPos: [1, 1, 1],
     explodedDistance: 4.15,
@@ -685,6 +731,7 @@ export const CUBE_PIECES: CubePieceNode[] = [
     title: 'Core · Containers & Cloud Delivery',
     category: 'core',
     chapterId: 'certifications',
+    tonalColor: '#8b5cf6',
     summary: 'Docker, OpenShift, Jenkins, Apache Reverse Proxy, Unix/Solaris.',
     gridPos: [1, -1, -1],
     explodedDistance: 4.45,
@@ -695,6 +742,7 @@ export const CUBE_PIECES: CubePieceNode[] = [
     title: 'Core · Generative Cinema Pipeline',
     category: 'core',
     chapterId: 'cinema',
+    tonalColor: '#ec4899',
     summary: 'ComfyUI, Hugging Face video models, Google Veo 2, audio synthesis.',
     gridPos: [-1, -1, 0],
     explodedDistance: 4.1,
