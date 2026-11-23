@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, Maximize2, Play, Pause, X } from 'lucide-react';
+import { Maximize2, Play, Pause, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { CINEMA_FILMS, CinemaFilm } from '../data/cvVault';
 import { staggerItemVariants } from './StorySection';
@@ -48,8 +48,8 @@ export function CinemaSection({ onFocusNode }: CinemaSectionProps) {
 
   return (
     <motion.div variants={staggerItemVariants} className="space-y-4">
-      {/* Film Selector Tabs + Carousel Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      {/* Film Selector Toggle */}
+      <div className="flex items-center justify-start">
         <div className="no-scrollbar inline-flex max-w-full items-center gap-1.5 overflow-x-auto rounded-xl border border-zinc-950/15 bg-white/90 p-1 dark:border-white/10 dark:bg-[#080d12]/92">
           {CINEMA_FILMS.map((film, idx) => {
             const selected = idx === activeIndex;
@@ -69,32 +69,10 @@ export function CinemaSection({ onFocusNode }: CinemaSectionProps) {
             );
           })}
         </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => selectFilm(activeIndex - 1)}
-            aria-label="Previous film"
-            className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-zinc-950/15 bg-white/90 text-zinc-800 transition-colors hover:border-zinc-950 hover:text-zinc-950 dark:border-white/10 dark:bg-[#090f15]/92 dark:text-slate-300 dark:hover:border-pink-300/40 dark:hover:text-pink-200"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-          <span className="font-mono-tabular text-xs text-zinc-600 dark:text-slate-400">
-            0{activeIndex + 1} / 0{CINEMA_FILMS.length}
-          </span>
-          <button
-            type="button"
-            onClick={() => selectFilm(activeIndex + 1)}
-            aria-label="Next film"
-            className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-zinc-950/15 bg-white/90 text-zinc-800 transition-colors hover:border-zinc-950 hover:text-zinc-950 dark:border-white/10 dark:bg-[#090f15]/92 dark:text-slate-300 dark:hover:border-pink-300/40 dark:hover:text-pink-200"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        </div>
       </div>
 
       {/* Main Compact Interactive Carousel Card with locked minimum height */}
-      <div className="min-h-[380px] sm:min-h-[395px] md:min-h-[295px]">
+      <div className="min-h-[430px] sm:min-h-[450px] md:min-h-[305px]">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeFilm.id}

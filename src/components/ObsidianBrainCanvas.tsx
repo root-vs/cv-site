@@ -157,7 +157,8 @@ const CHAPTER_CAMERA_OFFSET: Record<ChapterId, [number, number, number]> = {
   experience: [-1.2, -0.45, 9.4],
   certifications: [0.9, -0.85, 9.7],
   publications: [0.0, 1.35, 9.5],
-  education: [-0.9, 0.75, 9.6],
+  education: [0.85, 0.7, 9.6],
+  projects: [-1.05, 0.55, 9.65],
   cinema: [0.0, -1.1, 9.9],
   contact: [0.0, 0.25, 9.4],
 };

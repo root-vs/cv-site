@@ -182,25 +182,25 @@ export function StorySection({
 
   const alignClasses =
     align === 'left'
-      ? 'justify-start'
+      ? 'justify-center lg:justify-start'
       : align === 'right'
-      ? 'justify-end'
+      ? 'justify-center lg:justify-end'
       : 'justify-center';
 
   // Directional readability gradient behind content on desktop, balanced full scrim on mobile/tablet
   const directionalScrim =
     align === 'left'
-      ? 'bg-[#f4f4f5]/84 dark:bg-[#04070a]/72 lg:bg-transparent lg:dark:bg-transparent lg:bg-gradient-to-r lg:from-[#f4f4f5]/95 lg:via-[#f4f4f5]/78 lg:to-transparent lg:dark:from-[#04070a]/96 lg:dark:via-[#04070a]/75 lg:dark:to-transparent'
+      ? 'bg-[#f4f4f5]/84 dark:bg-[#04070a]/74 lg:bg-transparent lg:dark:bg-transparent lg:bg-gradient-to-r lg:from-[#f4f4f5]/95 lg:via-[#f4f4f5]/78 lg:to-transparent lg:dark:from-[#04070a]/96 lg:dark:via-[#04070a]/75 lg:dark:to-transparent'
       : align === 'right'
-      ? 'bg-[#f4f4f5]/84 dark:bg-[#04070a]/72 lg:bg-transparent lg:dark:bg-transparent lg:bg-gradient-to-l lg:from-[#f4f4f5]/95 lg:via-[#f4f4f5]/78 lg:to-transparent lg:dark:from-[#04070a]/96 lg:dark:via-[#04070a]/75 lg:dark:to-transparent'
-      : 'bg-radial from-[#f4f4f5]/92 via-[#f4f4f5]/72 to-[#f4f4f5]/30 dark:from-[#04070a]/88 dark:via-[#04070a]/62 dark:to-[#04070a]/25';
+      ? 'bg-[#f4f4f5]/84 dark:bg-[#04070a]/74 lg:bg-transparent lg:dark:bg-transparent lg:bg-gradient-to-l lg:from-[#f4f4f5]/95 lg:via-[#f4f4f5]/78 lg:to-transparent lg:dark:from-[#04070a]/96 lg:dark:via-[#04070a]/75 lg:dark:to-transparent'
+      : 'bg-radial from-[#f4f4f5]/92 via-[#f4f4f5]/74 to-[#f4f4f5]/35 dark:from-[#04070a]/88 dark:via-[#04070a]/64 dark:to-[#04070a]/25';
 
   return (
     <section
       id={id}
       ref={sectionRef}
       data-chapter={id}
-      className="pointer-events-none relative flex min-h-[100dvh] w-full snap-start md:snap-center items-center px-4 pt-20 pb-14 sm:px-8 sm:pt-24 sm:pb-16 lg:px-14 lg:pr-28"
+      className="pointer-events-none relative flex min-h-[100dvh] w-full snap-start md:snap-center items-center px-4 pt-20 pb-12 sm:px-8 sm:pt-24 sm:pb-16 lg:px-14 lg:pr-32"
     >
       {/* Subtle directional gradient scrim for crisp typography legibility over 3D space */}
       <div

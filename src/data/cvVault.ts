@@ -18,6 +18,7 @@ export type ChapterId =
   | 'certifications'
   | 'publications'
   | 'education'
+  | 'projects'
   | 'cinema'
   | 'contact';
 
@@ -73,13 +74,14 @@ export interface ChapterPalette {
 }
 
 export const CHAPTER_PALETTES: Record<ChapterId, ChapterPalette> = {
-  home: { obsidian: '#5eead4', lightInk: '#09090b', label: 'Core Obsidian' },
+  home: { obsidian: '#5eead4', lightInk: '#09090b', label: 'Core Teal' },
   about: { obsidian: '#22d3ee', lightInk: '#0e7490', label: 'Cyan' },
   skills: { obsidian: '#3b82f6', lightInk: '#1d4ed8', label: 'Cobalt Blue' },
   experience: { obsidian: '#14b8a6', lightInk: '#0f766e', label: 'Deep Teal' },
   certifications: { obsidian: '#a78bfa', lightInk: '#6d28d9', label: 'Amethyst Violet' },
   publications: { obsidian: '#f59e0b', lightInk: '#b45309', label: 'Solar Amber' },
   education: { obsidian: '#10b981', lightInk: '#047857', label: 'Emerald' },
+  projects: { obsidian: '#84cc16', lightInk: '#3f6212', label: 'Lime' },
   cinema: { obsidian: '#f472b6', lightInk: '#be185d', label: 'Cinema Rose' },
   contact: { obsidian: '#cbd5e1', lightInk: '#18181b', label: 'Titanium Slate' },
 };
@@ -92,7 +94,7 @@ export const CATEGORY_COLORS: Record<VaultCategory, string> = {
   credentials: CHAPTER_PALETTES.certifications.obsidian,
   research: CHAPTER_PALETTES.publications.obsidian,
   education: CHAPTER_PALETTES.education.obsidian,
-  projects: CHAPTER_PALETTES.education.obsidian,
+  projects: CHAPTER_PALETTES.projects.obsidian,
   cinema: CHAPTER_PALETTES.cinema.obsidian,
   contact: CHAPTER_PALETTES.contact.obsidian,
 };
@@ -146,8 +148,9 @@ export const CHAPTERS: {
   { id: 'certifications', index: '04', label: 'Credentials', focusNodeId: 'cert-anthropic' },
   { id: 'publications', index: '05', label: 'Research', focusNodeId: 'pub-icetci' },
   { id: 'education', index: '06', label: 'Education', focusNodeId: 'edu-msc' },
-  { id: 'cinema', index: '07', label: 'Cinema', focusNodeId: 'cinema-ooo' },
-  { id: 'contact', index: '08', label: 'Contact', focusNodeId: 'contact-node' },
+  { id: 'projects', index: '07', label: 'Projects', focusNodeId: 'proj-semantic' },
+  { id: 'cinema', index: '08', label: 'AI Film', focusNodeId: 'cinema-ooo' },
+  { id: 'contact', index: '09', label: 'Contact', focusNodeId: 'contact-node' },
 ];
 
 export const ABOUT_CONTENT = {
@@ -591,8 +594,8 @@ export const CUBE_PIECES: CubePieceNode[] = [
     id: 'proj-semantic',
     title: 'Big Data & Semantic Web: Seismic Ontology',
     category: 'projects',
-    chapterId: 'education',
-    tonalColor: '#6ee7b7',
+    chapterId: 'projects',
+    tonalColor: '#84cc16',
     summary:
       'ML multiclass seismic classification enriched via Semantic Web ontologies and Linked Open Data (DBpedia).',
     gridPos: [-1, 1, -1],
@@ -603,8 +606,8 @@ export const CUBE_PIECES: CubePieceNode[] = [
     id: 'proj-telecom',
     title: 'Telecom Networks: ARQ & CRC Security',
     category: 'projects',
-    chapterId: 'education',
-    tonalColor: '#059669',
+    chapterId: 'projects',
+    tonalColor: '#a3e635',
     summary:
       'Packet manipulation evaluation on full-duplex ARQ Stop-and-Wait piggyback with parity bit, parity matrix & CRC.',
     gridPos: [1, 0, -1],
@@ -615,8 +618,8 @@ export const CUBE_PIECES: CubePieceNode[] = [
     id: 'proj-robotics',
     title: 'Cognitive Robotics: ROS & Gazebo',
     category: 'projects',
-    chapterId: 'education',
-    tonalColor: '#a7f3d0',
+    chapterId: 'projects',
+    tonalColor: '#bef264',
     summary:
       'Autonomous robot navigation in simulated football field with MobileNetSSDv2 tracking and obstacle avoidance.',
     gridPos: [-1, 0, -1],
@@ -627,8 +630,8 @@ export const CUBE_PIECES: CubePieceNode[] = [
     id: 'proj-vision',
     title: 'Artificial Vision: ALPR (YOLOv3 + CRNN)',
     category: 'projects',
-    chapterId: 'education',
-    tonalColor: '#047857',
+    chapterId: 'projects',
+    tonalColor: '#65a30d',
     summary:
       'License plate detection (YOLOv3), image rectification (Xception), and OCR character recognition (CRNN).',
     gridPos: [0, 1, 0],
@@ -639,8 +642,8 @@ export const CUBE_PIECES: CubePieceNode[] = [
     id: 'proj-dp3t',
     title: 'Cybersecurity: DP3T Replay Defense',
     category: 'projects',
-    chapterId: 'education',
-    tonalColor: '#22c55e',
+    chapterId: 'projects',
+    tonalColor: '#4d7c0f',
     summary:
       'Decentralized privacy-preserving contact tracing security scheme preventing fake contact replay attacks.',
     gridPos: [-1, 1, 1],
@@ -739,13 +742,13 @@ export const CUBE_PIECES: CubePieceNode[] = [
   },
   {
     id: 'pillar-cinema',
-    title: 'Core · Generative Cinema Pipeline',
+    title: 'Core · Generative AI Film Pipeline',
     category: 'core',
     chapterId: 'cinema',
     tonalColor: '#ec4899',
     summary: 'ComfyUI, Hugging Face video models, Google Veo 2, audio synthesis.',
     gridPos: [-1, -1, 0],
     explodedDistance: 4.1,
-    meta: 'Core Module · Cinema',
+    meta: 'Core Module · AI Film',
   },
 ];

@@ -41,7 +41,7 @@ export function WorkExperienceSection({
       <div
         role="tablist"
         aria-label="Sytel Reply career milestones"
-        className="no-scrollbar flex flex-nowrap gap-5 overflow-x-auto border-b border-zinc-950/15 pb-1 dark:border-white/12 sm:gap-7"
+        className="no-scrollbar flex flex-nowrap gap-4 overflow-x-auto border-b border-zinc-950/15 pb-1 dark:border-white/12 sm:gap-7"
       >
         {EXPERIENCE_PHASES.map((phase) => {
           const isSelected = phase.id === activePhase.id;
@@ -78,7 +78,7 @@ export function WorkExperienceSection({
       </div>
 
       {/* Fixed-Min-Height Wrapper: tab switches never resize or shift the menu/header above */}
-      <div className="min-h-[530px] sm:min-h-[455px] lg:min-h-[430px]">
+      <div className="min-h-[555px] sm:min-h-[455px] lg:min-h-[430px]">
         <AnimatePresence mode="wait">
           <motion.div
             key={activePhase.id}

@@ -206,7 +206,8 @@ export function CommandPalette({
         </div>
 
         <div className="flex shrink-0 items-center justify-between gap-2 border-t border-zinc-950/10 bg-zinc-50 px-4 py-2 text-[11px] text-zinc-600 dark:border-white/10 dark:bg-[#05090d] dark:text-slate-500">
-          <span className="truncate">↑↓ Navigate · Enter to inspect cubetto</span>
+          <span className="truncate sm:hidden">Tap a section to inspect cubetto</span>
+          <span className="hidden truncate sm:inline">↑↓ Navigate · Enter to inspect cubetto</span>
           <span className="font-mono-tabular shrink-0">ESC to close</span>
         </div>
       </div>

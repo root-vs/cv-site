@@ -19,6 +19,7 @@ import { CommandPalette } from './components/CommandPalette';
 import { ContactModal } from './components/ContactModal';
 import { EducationSection } from './components/EducationSection';
 import { CubeThemeMode, ObsidianBrainCanvas } from './components/ObsidianBrainCanvas';
+import { ProjectsSection } from './components/ProjectsSection';
 import { RightNavRail } from './components/RightNavRail';
 import { StorySection, staggerItemVariants } from './components/StorySection';
 import { WorkExperienceSection } from './components/WorkExperienceSection';
@@ -46,7 +47,8 @@ const CHAPTER_STAGE_SIDE: Record<ChapterId, 'right' | 'left' | 'center'> = {
   experience: 'right',
   certifications: 'left',
   publications: 'right',
-  education: 'right',
+  education: 'left',
+  projects: 'right',
   cinema: 'center',
   contact: 'center',
 };
@@ -69,6 +71,7 @@ export default function App() {
     certifications: 0,
     publications: 0,
     education: 0,
+    projects: 0,
     cinema: 0,
     contact: 0,
   });
@@ -306,8 +309,8 @@ export default function App() {
       </div>
 
       {/* Fixed 3-Zone Top Bar (stationary items, no layout shifts across theme/tab switches) */}
-      <header className="fixed left-0 right-0 top-0 z-30 border-b border-zinc-950/12 bg-white/92 px-3 py-2.5 transition-colors duration-300 dark:border-white/10 dark:bg-[#04070a]/90 sm:px-8 sm:py-3">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 sm:gap-6">
+      <header className="fixed left-0 right-0 top-0 z-30 border-b border-zinc-950/12 bg-white/92 px-3 py-2.5 transition-colors duration-300 dark:border-white/10 dark:bg-[#04070a]/90 sm:px-6 sm:py-3 lg:px-8">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 sm:gap-4 lg:gap-6">
           <button
             type="button"
             onClick={() => scrollToChapter('home')}
@@ -316,16 +319,17 @@ export default function App() {
             Valerio Serino
           </button>
 
+          {/* Compact navigation for medium / small-laptop screens */}
           <nav
             aria-label="Primary navigation"
-            className="hidden items-center gap-6 text-xs font-medium text-zinc-600 dark:text-slate-300 md:flex"
+            className="hidden items-center gap-3.5 text-xs font-medium text-zinc-600 dark:text-slate-300 md:flex lg:gap-6 xl:hidden"
           >
             {(
               [
                 ['about', 'About'],
                 ['experience', 'Experience'],
                 ['publications', 'Research'],
-                ['cinema', 'Cinema'],
+                ['cinema', 'AI Film'],
                 ['contact', 'Contact'],
               ] as const
             ).map(([chId, label]) => {
@@ -354,18 +358,49 @@ export default function App() {
             })}
           </nav>
 
+          {/* Full chapter navigation mirroring the right-side rail on larger screens */}
+          <nav
+            aria-label="Full chapter navigation"
+            className="hidden items-center gap-3.5 text-xs font-medium text-zinc-600 dark:text-slate-300 xl:flex 2xl:gap-5"
+          >
+            {CHAPTERS.map((chapter) => {
+              const isCurrent = activeChapter === chapter.id;
+              const chHex = isLightTheme
+                ? CHAPTER_PALETTES[chapter.id].lightInk
+                : CHAPTER_PALETTES[chapter.id].obsidian;
+              return (
+                <button
+                  key={chapter.id}
+                  type="button"
+                  onClick={() => scrollToChapter(chapter.id)}
+                  className="relative cursor-pointer whitespace-nowrap shrink-0 py-0.5 transition-colors hover:text-zinc-950 dark:hover:text-white"
+                  style={isCurrent ? { color: chHex } : undefined}
+                >
+                  {chapter.label}
+                  {isCurrent && (
+                    <span
+                      aria-hidden="true"
+                      className="absolute -bottom-1 left-0 right-0 h-[1.5px] rounded-full"
+                      style={{ backgroundColor: chHex }}
+                    />
+                  )}
+                </button>
+              );
+            })}
+          </nav>
+
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             <button
               type="button"
               onClick={handleToggleTheme}
               aria-label={
                 isLightTheme
-                  ? 'Switch to Deep Obsidian dark mode'
-                  : 'Switch to High-Contrast Monochrome Light mode'
+                  ? 'Switch to Dark mode'
+                  : 'Switch to High-Contrast Light mode'
               }
               aria-pressed={isLightTheme}
-              title={isLightTheme ? 'Light Mode (Active)' : 'Deep Obsidian (Active)'}
-              className="inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap shrink-0 rounded-lg border border-zinc-950/15 bg-zinc-100 px-2.5 py-1.5 text-xs font-medium text-zinc-900 transition-colors hover:border-zinc-950 dark:border-white/12 dark:bg-white/5 dark:text-slate-200 dark:hover:border-teal-300/40 dark:hover:text-teal-200"
+              title={isLightTheme ? 'Light Mode (Active)' : 'Dark Mode (Active)'}
+              className="inline-flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap shrink-0 rounded-lg border border-zinc-950/15 bg-zinc-100 p-2 text-xs font-medium text-zinc-900 transition-colors hover:border-zinc-950 dark:border-white/12 dark:bg-white/5 dark:text-slate-200 dark:hover:border-teal-300/40 dark:hover:text-teal-200 sm:px-2.5 sm:py-1.5"
             >
               {isLightTheme ? (
                 <Sun className="h-3.5 w-3.5 text-zinc-950" />
@@ -373,7 +408,7 @@ export default function App() {
                 <Moon className="h-3.5 w-3.5 text-teal-300" />
               )}
               <span className="hidden lg:inline">
-                {isLightTheme ? 'Light' : 'Obsidian'}
+                {isLightTheme ? 'Light' : 'Dark'}
               </span>
             </button>
 
@@ -383,26 +418,27 @@ export default function App() {
               aria-label={soundEnabled ? 'Mute tactile sound' : 'Enable tactile sound'}
               aria-pressed={soundEnabled}
               title={soundEnabled ? 'SFX On' : 'SFX Off'}
-              className="inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap shrink-0 rounded-lg border border-zinc-950/15 bg-zinc-100 px-2.5 py-1.5 text-xs font-medium text-zinc-900 transition-colors hover:border-zinc-950 dark:border-white/12 dark:bg-white/5 dark:text-slate-200 dark:hover:border-teal-300/40 dark:hover:text-teal-200"
+              className="inline-flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap shrink-0 rounded-lg border border-zinc-950/15 bg-zinc-100 p-2 text-xs font-medium text-zinc-900 transition-colors hover:border-zinc-950 dark:border-white/12 dark:bg-white/5 dark:text-slate-200 dark:hover:border-teal-300/40 dark:hover:text-teal-200 sm:px-2.5 sm:py-1.5"
             >
               {soundEnabled ? (
                 <Volume2 className="h-3.5 w-3.5 text-zinc-950 dark:text-teal-300" />
               ) : (
                 <VolumeX className="h-3.5 w-3.5 text-zinc-500 dark:text-slate-400" />
               )}
-              <span className="hidden sm:inline">{soundEnabled ? 'SFX On' : 'SFX Off'}</span>
+              <span className="hidden sm:inline md:hidden lg:inline">
+                {soundEnabled ? 'SFX On' : 'SFX Off'}
+              </span>
             </button>
 
             <button
               type="button"
               onClick={() => setPaletteOpen(true)}
-              className="inline-flex cursor-pointer items-center gap-2 whitespace-nowrap shrink-0 rounded-lg border border-zinc-950 bg-zinc-950 px-2.5 py-1.5 text-xs font-medium text-white transition-colors hover:bg-zinc-800 dark:border-teal-300/35 dark:bg-teal-400/12 dark:text-teal-200 dark:hover:bg-teal-400/22 sm:px-3.5"
+              aria-label="Search and navigate cube"
+              title="Navigate Cube"
+              className="inline-flex cursor-pointer items-center justify-center gap-2 whitespace-nowrap shrink-0 rounded-lg border border-zinc-950 bg-zinc-950 p-2 text-xs font-medium text-white transition-colors hover:bg-zinc-800 dark:border-teal-300/35 dark:bg-teal-400/12 dark:text-teal-200 dark:hover:bg-teal-400/22 sm:px-3.5 sm:py-1.5"
             >
               <Search className="h-3.5 w-3.5" />
-              <span>Navigate Cube</span>
-              <span className="font-mono-tabular hidden text-[11px] text-zinc-300 dark:text-teal-300/80 sm:inline">
-                ⌘K
-              </span>
+              <span className="hidden sm:inline">Navigate Cube</span>
             </button>
           </div>
         </div>
@@ -703,7 +739,7 @@ export default function App() {
               })}
             </div>
 
-            <div className="min-h-[265px] sm:min-h-[245px]">
+            <div className="min-h-[290px] sm:min-h-[250px]">
               <AnimatePresence mode="wait">
                 <motion.ul
                   key={activeCertGroup.nodeId}
@@ -719,12 +755,9 @@ export default function App() {
                       initial={{ opacity: 0, y: 6 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: idx * 0.035 }}
-                      className="flex items-center justify-between gap-3 py-2.5 text-xs text-zinc-900 dark:text-slate-100 sm:py-3 sm:text-sm"
+                      className="py-2.5 text-xs text-zinc-900 dark:text-slate-100 sm:py-3 sm:text-sm"
                     >
                       <span>{cert}</span>
-                      <span className="font-mono-tabular shrink-0 text-xs text-zinc-500 dark:text-slate-500">
-                        0{idx + 1}
-                      </span>
                     </motion.li>
                   ))}
                 </motion.ul>
@@ -777,13 +810,13 @@ export default function App() {
           </motion.div>
         </StorySection>
 
-        {/* 06. EDUCATION (Emerald Green Parent + 7 Emerald Sub-Cubes) */}
+        {/* 06. EDUCATION (Master's & Bachelor's together · Emerald Green Parent) */}
         <StorySection
           id="education"
           indexLabel="06"
           nodeLabel="Cube Impact · Academic Foundations"
           title="Education"
-          align="left"
+          align="right"
           theme={theme}
           accentColor={CHAPTER_PALETTES.education.obsidian}
           lightAccentColor={CHAPTER_PALETTES.education.lightInk}
@@ -797,13 +830,33 @@ export default function App() {
           <EducationSection onFocusNode={(nid) => setActiveNodeId(nid)} />
         </StorySection>
 
-        {/* 07. CONTEST AZIENDALI / REPLY FILM FESTIVAL (Cinema Rose Parent) */}
+        {/* 07. UNIVERSITY MAIN PROJECTS (Dedicated Expandable Cube · Lime Parent) */}
+        <StorySection
+          id="projects"
+          indexLabel="07"
+          nodeLabel="Cube Impact · University Labs"
+          title="Main Projects"
+          align="left"
+          theme={theme}
+          accentColor={CHAPTER_PALETTES.projects.obsidian}
+          lightAccentColor={CHAPTER_PALETTES.projects.lightInk}
+          isActive={activeChapter === 'projects'}
+          focusProximity={proximities.projects}
+          maxWidthClass="max-w-2xl"
+          sectionRef={(el) => {
+            sectionRefs.current.projects = el;
+          }}
+        >
+          <ProjectsSection onFocusNode={(nid) => setActiveNodeId(nid)} />
+        </StorySection>
+
+        {/* 08. CONTEST AZIENDALI / REPLY FILM FESTIVAL (Cinema Rose Parent) */}
         <StorySection
           id="cinema"
-          indexLabel="07"
+          indexLabel="08"
           nodeLabel="Cube Impact · Contest Aziendali"
           title="Reply Film Festival"
-          subtitle="Experimental AI short films produced for the Reply AI Film Contest (ComfyUI, Hugging Face & Google Veo 2)."
+          subtitle="Experimental AI short films produced for the Reply AI Film Contest."
           align="center"
           theme={theme}
           accentColor={CHAPTER_PALETTES.cinema.obsidian}
@@ -818,10 +871,10 @@ export default function App() {
           <CinemaSection onFocusNode={(nid) => setActiveNodeId(nid)} />
         </StorySection>
 
-        {/* 08. CONTACT & FOOTER */}
+        {/* 09. CONTACT & FOOTER */}
         <StorySection
           id="contact"
-          indexLabel="08"
+          indexLabel="09"
           nodeLabel="Cube Impact · Connect"
           title="Contact"
           align="center"
