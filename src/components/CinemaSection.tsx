@@ -12,9 +12,19 @@ export function CinemaSection({ onFocusNode }: CinemaSectionProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPlayingPreview, setIsPlayingPreview] = useState(true);
   const [modalFilm, setModalFilm] = useState<CinemaFilm | null>(null);
+  const [failedLocalIds, setFailedLocalIds] = useState<Record<string, boolean>>({});
   const previewVideoRef = useRef<HTMLVideoElement | null>(null);
 
   const activeFilm = CINEMA_FILMS[activeIndex];
+  const getFilmSrc = (film: CinemaFilm) =>
+    failedLocalIds[film.id] && film.fallbackVideoUrl ? film.fallbackVideoUrl : film.videoUrl;
+  const activeVideoSrc = getFilmSrc(activeFilm);
+
+  const handleVideoError = (film: CinemaFilm) => {
+    if (film.fallbackVideoUrl && !failedLocalIds[film.id]) {
+      setFailedLocalIds((prev) => ({ ...prev, [film.id]: true }));
+    }
+  };
 
   const selectFilm = (idx: number) => {
     const normalized = (idx + CINEMA_FILMS.length) % CINEMA_FILMS.length;
@@ -33,7 +43,7 @@ export function CinemaSection({ onFocusNode }: CinemaSectionProps) {
     } else {
       video.pause();
     }
-  }, [activeIndex, isPlayingPreview, modalFilm]);
+  }, [activeIndex, activeVideoSrc, isPlayingPreview, modalFilm]);
 
   useEffect(() => {
     if (!modalFilm) return;
@@ -87,12 +97,19 @@ export function CinemaSection({ onFocusNode }: CinemaSectionProps) {
               <div className="relative bg-black md:col-span-7">
                 <video
                   ref={previewVideoRef}
-                  key={activeFilm.videoUrl}
-                  src={activeFilm.videoUrl}
+                  key={activeVideoSrc}
+                  src={activeVideoSrc}
+                  autoPlay={isPlayingPreview && !modalFilm}
                   muted
                   loop
                   playsInline
-                  preload="metadata"
+                  preload="auto"
+                  onCanPlay={() => {
+                    if (isPlayingPreview && !modalFilm) {
+                      previewVideoRef.current?.play().catch(() => {});
+                    }
+                  }}
+                  onError={() => handleVideoError(activeFilm)}
                   className="aspect-video h-full w-full object-cover"
                 />
                 <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-black/25" />
@@ -190,10 +207,12 @@ export function CinemaSection({ onFocusNode }: CinemaSectionProps) {
               </button>
             </div>
             <video
-              src={modalFilm.videoUrl}
+              key={getFilmSrc(modalFilm)}
+              src={getFilmSrc(modalFilm)}
               controls
               autoPlay
               playsInline
+              onError={() => handleVideoError(modalFilm)}
               className="aspect-video max-h-[66dvh] w-full bg-black object-contain"
             />
             <div className="shrink-0 px-4 py-2.5 text-xs text-zinc-700 dark:text-slate-300 sm:px-5 sm:py-3">

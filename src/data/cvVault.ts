@@ -63,6 +63,7 @@ export interface CinemaFilm {
   contest: string;
   year: string;
   videoUrl: string;
+  fallbackVideoUrl?: string;
   synopsis: string;
   techNote: string;
 }
@@ -417,6 +418,8 @@ export const CINEMA_FILMS: CinemaFilm[] = [
     contest: 'Reply AI Film Contest 2026',
     year: '2026',
     videoUrl: ASSETS.filmOutOfOffice,
+    fallbackVideoUrl:
+      'https://root-vs.github.io/cv-ai-assistant/videos/out-of-office-compressed-2026.mp4',
     synopsis:
       'A man returns to a sterile office after an impossible digital detour, where the rhythm of work dissolves into a luminous, machine-made dream.',
     techNote:
@@ -429,6 +432,8 @@ export const CINEMA_FILMS: CinemaFilm[] = [
     contest: 'Reply AI Film Contest 2025',
     year: '2025',
     videoUrl: ASSETS.filmGaia,
+    fallbackVideoUrl:
+      'https://root-vs.github.io/cv-ai-assistant/videos/gaia-compressed-2025.mp4',
     synopsis:
       'A lone traveler drifts through a living planet, where memory, weather, and ancient silence collapse into a fragile future.',
     techNote:

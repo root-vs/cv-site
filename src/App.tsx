@@ -89,6 +89,13 @@ export default function App() {
   const [contactOpen, setContactOpen] = useState(false);
   const [typedLength, setTypedLength] = useState(0);
 
+  const activeChapterRef = useRef<ChapterId>(activeChapter);
+  activeChapterRef.current = activeChapter;
+  const lastArrowNavRef = useRef<{ index: number; timestamp: number }>({
+    index: 0,
+    timestamp: 0,
+  });
+
   // Keep HTML root `.dark` class and localStorage synced with active theme
   useEffect(() => {
     const isObsidian = theme === 'obsidian';
@@ -219,6 +226,10 @@ export default function App() {
   }, []);
 
   const scrollToChapter = useCallback((chapterId: ChapterId, customNodeId?: string) => {
+    const targetIdx = CHAPTERS.findIndex((c) => c.id === chapterId);
+    if (targetIdx !== -1) {
+      lastArrowNavRef.current = { index: targetIdx, timestamp: Date.now() };
+    }
     const el = sectionRefs.current[chapterId];
     if (el) {
       el.scrollIntoView({
@@ -233,6 +244,52 @@ export default function App() {
       setActiveNodeId(chMeta.focusNodeId);
     }
   }, []);
+
+  // Keyboard arrow navigation (Up/Left = backward, Down/Right = forward)
+  useEffect(() => {
+    const onArrowKeyDown = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
+      if (paletteOpen || contactOpen || document.querySelector('[role="dialog"]')) return;
+
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+
+      const isNext = e.key === 'ArrowDown' || e.key === 'ArrowRight';
+      const isPrev = e.key === 'ArrowUp' || e.key === 'ArrowLeft';
+      if (!isNext && !isPrev) return;
+
+      e.preventDefault();
+      soundEngine.unlock();
+
+      const now = Date.now();
+      const baseIndex =
+        now - lastArrowNavRef.current.timestamp < 750
+          ? lastArrowNavRef.current.index
+          : Math.max(
+              0,
+              CHAPTERS.findIndex((c) => c.id === activeChapterRef.current)
+            );
+
+      const nextIndex = isNext
+        ? Math.min(CHAPTERS.length - 1, baseIndex + 1)
+        : Math.max(0, baseIndex - 1);
+
+      if (nextIndex !== baseIndex || now - lastArrowNavRef.current.timestamp >= 750) {
+        scrollToChapter(CHAPTERS[nextIndex].id);
+      }
+    };
+
+    window.addEventListener('keydown', onArrowKeyDown);
+    return () => window.removeEventListener('keydown', onArrowKeyDown);
+  }, [paletteOpen, contactOpen, scrollToChapter]);
 
   const handleSelectPiece = useCallback(
     (piece: CubePieceNode) => {
