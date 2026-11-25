@@ -62,6 +62,7 @@ export interface CinemaFilm {
   title: string;
   contest: string;
   year: string;
+  posterUrl: string;
   videoUrl: string;
   fallbackVideoUrl?: string;
   synopsis: string;
@@ -133,7 +134,9 @@ export const ASSETS = {
   profileImage: `${BASE}assets/images/site.png`,
   cvPdf: `${BASE}assets/aistudio/valerio_serino_cv_resume_f15997cd.pdf`,
   filmOutOfOffice: `${BASE}assets/aistudio/out-of-office-compressed-2026_8ee259a8.mp4`,
+  filmOutOfOfficePoster: `${BASE}assets/images/poster-out-of-office.jpg`,
   filmGaia: `${BASE}assets/aistudio/gaia-compressed-2025_a85460c6.mp4`,
+  filmGaiaPoster: `${BASE}assets/images/poster-gaia.jpg`,
 } as const;
 
 export const CHAPTERS: {
@@ -146,7 +149,7 @@ export const CHAPTERS: {
   { id: 'about', index: '01', label: 'About', focusNodeId: 'about-mindset' },
   { id: 'skills', index: '02', label: 'Skills', focusNodeId: 'skills-tech' },
   { id: 'experience', index: '03', label: 'Experience', focusNodeId: 'exp-senior' },
-  { id: 'certifications', index: '04', label: 'Credentials', focusNodeId: 'cert-anthropic' },
+  { id: 'certifications', index: '04', label: 'Certifications', focusNodeId: 'cert-anthropic' },
   { id: 'publications', index: '05', label: 'Research', focusNodeId: 'pub-icetci' },
   { id: 'education', index: '06', label: 'Education', focusNodeId: 'edu-msc' },
   { id: 'projects', index: '07', label: 'Projects', focusNodeId: 'proj-semantic' },
@@ -417,6 +420,7 @@ export const CINEMA_FILMS: CinemaFilm[] = [
     title: 'OUT-OF-OFFICE',
     contest: 'Reply AI Film Contest 2026',
     year: '2026',
+    posterUrl: ASSETS.filmOutOfOfficePoster,
     videoUrl: ASSETS.filmOutOfOffice,
     fallbackVideoUrl:
       'https://root-vs.github.io/cv-ai-assistant/videos/out-of-office-compressed-2026.mp4',
@@ -431,6 +435,7 @@ export const CINEMA_FILMS: CinemaFilm[] = [
     title: 'GAIA',
     contest: 'Reply AI Film Contest 2025',
     year: '2025',
+    posterUrl: ASSETS.filmGaiaPoster,
     videoUrl: ASSETS.filmGaia,
     fallbackVideoUrl:
       'https://root-vs.github.io/cv-ai-assistant/videos/gaia-compressed-2025.mp4',

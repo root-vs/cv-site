@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Maximize2, Play, Pause, X } from 'lucide-react';
+import { Maximize2, Play, Pause, Volume2, VolumeX, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { CINEMA_FILMS, CinemaFilm } from '../data/cvVault';
 import { staggerItemVariants } from './StorySection';
@@ -10,7 +10,9 @@ interface CinemaSectionProps {
 
 export function CinemaSection({ onFocusNode }: CinemaSectionProps) {
   const [activeIndex, setActiveIndex] = useState(0);
-  const [isPlayingPreview, setIsPlayingPreview] = useState(true);
+  const [hasStartedPreview, setHasStartedPreview] = useState(false);
+  const [isPlayingPreview, setIsPlayingPreview] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
   const [modalFilm, setModalFilm] = useState<CinemaFilm | null>(null);
   const [failedLocalIds, setFailedLocalIds] = useState<Record<string, boolean>>({});
   const previewVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -29,21 +31,71 @@ export function CinemaSection({ onFocusNode }: CinemaSectionProps) {
   const selectFilm = (idx: number) => {
     const normalized = (idx + CINEMA_FILMS.length) % CINEMA_FILMS.length;
     setActiveIndex(normalized);
-    setIsPlayingPreview(true);
+    setHasStartedPreview(false);
+    setIsPlayingPreview(false);
     onFocusNode(CINEMA_FILMS[normalized].nodeId);
+  };
+
+  const handleStartOrTogglePlay = () => {
+    const video = previewVideoRef.current;
+    if (!hasStartedPreview) {
+      setHasStartedPreview(true);
+      setIsPlayingPreview(true);
+      if (video) {
+        video.muted = isMuted;
+        video.play().catch(() => {
+          // If unmuted autoplay is blocked, retry muted and sync button
+          video.muted = true;
+          setIsMuted(true);
+          video.play().catch(() => {});
+        });
+      }
+      return;
+    }
+
+    if (isPlayingPreview) {
+      setIsPlayingPreview(false);
+      video?.pause();
+    } else {
+      setIsPlayingPreview(true);
+      if (video) {
+        video.muted = isMuted;
+        video.play().catch(() => {
+          video.muted = true;
+          setIsMuted(true);
+          video.play().catch(() => {});
+        });
+      }
+    }
+  };
+
+  const handleToggleAudio = () => {
+    const nextMuted = !isMuted;
+    setIsMuted(nextMuted);
+    if (previewVideoRef.current) {
+      previewVideoRef.current.muted = nextMuted;
+    }
+  };
+
+  const handleOpenFullscreen = () => {
+    if (previewVideoRef.current) {
+      previewVideoRef.current.pause();
+    }
+    setIsPlayingPreview(false);
+    setModalFilm(activeFilm);
   };
 
   useEffect(() => {
     const video = previewVideoRef.current;
     if (!video) return;
-    if (isPlayingPreview && !modalFilm) {
-      video.play().catch(() => {
-        // Autoplay might be blocked before interaction; keep UI consistent
-      });
-    } else {
-      video.pause();
+    video.muted = isMuted;
+  }, [isMuted, activeVideoSrc]);
+
+  useEffect(() => {
+    if (modalFilm && previewVideoRef.current) {
+      previewVideoRef.current.pause();
     }
-  }, [activeIndex, activeVideoSrc, isPlayingPreview, modalFilm]);
+  }, [modalFilm]);
 
   useEffect(() => {
     if (!modalFilm) return;
@@ -93,52 +145,95 @@ export function CinemaSection({ onFocusNode }: CinemaSectionProps) {
             className="overflow-hidden rounded-2xl border border-zinc-950/15 bg-white shadow-xl dark:border-white/10 dark:bg-[#090f15]/92 dark:shadow-2xl"
           >
             <div className="grid grid-cols-1 items-stretch md:grid-cols-12">
-              {/* Video Preview Surface */}
+              {/* Video Cover & Inline Player Surface */}
               <div className="relative bg-black md:col-span-7">
                 <video
                   ref={previewVideoRef}
                   key={activeVideoSrc}
                   src={activeVideoSrc}
-                  autoPlay={isPlayingPreview && !modalFilm}
-                  muted
+                  poster={activeFilm.posterUrl}
+                  muted={isMuted}
                   loop
                   playsInline
-                  preload="auto"
-                  onCanPlay={() => {
-                    if (isPlayingPreview && !modalFilm) {
-                      previewVideoRef.current?.play().catch(() => {});
-                    }
-                  }}
+                  preload="metadata"
+                  onClick={handleStartOrTogglePlay}
                   onError={() => handleVideoError(activeFilm)}
-                  className="aspect-video h-full w-full object-cover"
+                  className="aspect-video h-full w-full cursor-pointer object-cover"
                 />
-                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-black/25" />
 
-                {/* Inline Video Controls */}
-                <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between gap-2 sm:bottom-3 sm:left-3 sm:right-3">
+                {/* Crisp Film Cover Image before playback starts */}
+                {!hasStartedPreview && (
+                  <img
+                    src={activeFilm.posterUrl}
+                    alt={`${activeFilm.title} film cover`}
+                    onClick={handleStartOrTogglePlay}
+                    className="absolute inset-0 h-full w-full cursor-pointer object-cover"
+                  />
+                )}
+
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-black/25" />
+
+                {/* Centered Play Button (visible on cover and whenever paused) */}
+                {(!hasStartedPreview || !isPlayingPreview) && (
                   <button
                     type="button"
-                    onClick={() => setIsPlayingPreview((prev) => !prev)}
-                    className="inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap shrink-0 rounded-lg border border-white/20 bg-black/80 px-2.5 py-1.5 text-[11px] font-medium text-white transition-colors hover:border-pink-300/60 hover:text-pink-200 sm:px-3 sm:text-xs"
+                    onClick={handleStartOrTogglePlay}
+                    aria-label={`Play ${activeFilm.title}`}
+                    className="group absolute left-1/2 top-1/2 z-10 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/35 bg-black/70 text-white shadow-2xl transition-transform duration-200 hover:scale-105 hover:border-pink-300/80 hover:bg-black/85 dark:text-pink-200 sm:h-16 sm:w-16"
                   >
-                    {isPlayingPreview ? (
-                      <>
-                        <Pause className="h-3.5 w-3.5" />
-                        <span>Pause</span>
-                        <span className="hidden sm:inline">preview</span>
-                      </>
-                    ) : (
-                      <>
-                        <Play className="h-3.5 w-3.5" />
-                        <span>Play</span>
-                        <span className="hidden sm:inline">preview</span>
-                      </>
-                    )}
+                    <Play className="ml-0.5 h-6 w-6 fill-current transition-transform duration-200 group-hover:scale-105 sm:h-7 sm:w-7" />
                   </button>
+                )}
+
+                {/* Bottom Controls: Play/Pause (when active) + Audio + Fullscreen */}
+                <div className="absolute bottom-2.5 left-2.5 right-2.5 z-10 flex items-center justify-between gap-2 sm:bottom-3 sm:left-3 sm:right-3">
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    {hasStartedPreview && (
+                      <button
+                        type="button"
+                        onClick={handleStartOrTogglePlay}
+                        aria-label={isPlayingPreview ? 'Pause film' : 'Resume film'}
+                        className="inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap shrink-0 rounded-lg border border-white/20 bg-black/80 px-2.5 py-1.5 text-[11px] font-medium text-white transition-colors hover:border-pink-300/60 hover:text-pink-200 sm:px-3 sm:text-xs"
+                      >
+                        {isPlayingPreview ? (
+                          <>
+                            <Pause className="h-3.5 w-3.5" />
+                            <span className="hidden sm:inline">Pause</span>
+                          </>
+                        ) : (
+                          <>
+                            <Play className="h-3.5 w-3.5" />
+                            <span className="hidden sm:inline">Play</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={handleToggleAudio}
+                      aria-label={isMuted ? 'Unmute audio' : 'Mute audio'}
+                      aria-pressed={!isMuted}
+                      title={isMuted ? 'Audio Off' : 'Audio On'}
+                      className="inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap shrink-0 rounded-lg border border-white/20 bg-black/80 px-2.5 py-1.5 text-[11px] font-medium text-white transition-colors hover:border-pink-300/60 hover:text-pink-200 sm:px-3 sm:text-xs"
+                    >
+                      {isMuted ? (
+                        <>
+                          <VolumeX className="h-3.5 w-3.5 text-slate-300" />
+                          <span>Audio Off</span>
+                        </>
+                      ) : (
+                        <>
+                          <Volume2 className="h-3.5 w-3.5 text-pink-300" />
+                          <span>Audio On</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
 
                   <button
                     type="button"
-                    onClick={() => setModalFilm(activeFilm)}
+                    onClick={handleOpenFullscreen}
                     className="inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap shrink-0 rounded-lg bg-zinc-950 px-2.5 py-1.5 text-[11px] font-semibold text-white transition-colors hover:bg-zinc-800 dark:bg-pink-400 dark:text-slate-950 dark:hover:bg-pink-300 sm:px-3.5 sm:text-xs"
                   >
                     <Maximize2 className="h-3.5 w-3.5" />
@@ -209,6 +304,7 @@ export function CinemaSection({ onFocusNode }: CinemaSectionProps) {
             <video
               key={getFilmSrc(modalFilm)}
               src={getFilmSrc(modalFilm)}
+              poster={modalFilm.posterUrl}
               controls
               autoPlay
               playsInline
