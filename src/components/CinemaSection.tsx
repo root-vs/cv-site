@@ -6,9 +6,13 @@ import { staggerItemVariants } from './StorySection';
 
 interface CinemaSectionProps {
   onFocusNode: (nodeId: string) => void;
+  isActiveSection?: boolean;
 }
 
-export function CinemaSection({ onFocusNode }: CinemaSectionProps) {
+export function CinemaSection({
+  onFocusNode,
+  isActiveSection = true,
+}: CinemaSectionProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [hasStartedPreview, setHasStartedPreview] = useState(false);
   const [isPlayingPreview, setIsPlayingPreview] = useState(false);
@@ -16,6 +20,7 @@ export function CinemaSection({ onFocusNode }: CinemaSectionProps) {
   const [modalFilm, setModalFilm] = useState<CinemaFilm | null>(null);
   const [failedLocalIds, setFailedLocalIds] = useState<Record<string, boolean>>({});
   const previewVideoRef = useRef<HTMLVideoElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
   const activeFilm = CINEMA_FILMS[activeIndex];
   const getFilmSrc = (film: CinemaFilm) =>
@@ -28,15 +33,29 @@ export function CinemaSection({ onFocusNode }: CinemaSectionProps) {
     }
   };
 
+  const stopAndResetPreview = () => {
+    const video = previewVideoRef.current;
+    if (video) {
+      video.pause();
+      try {
+        video.currentTime = 0;
+      } catch {
+        // Ignore seek reset errors if metadata not loaded yet
+      }
+    }
+    setIsPlayingPreview(false);
+    setHasStartedPreview(false);
+  };
+
   const selectFilm = (idx: number) => {
     const normalized = (idx + CINEMA_FILMS.length) % CINEMA_FILMS.length;
+    stopAndResetPreview();
     setActiveIndex(normalized);
-    setHasStartedPreview(false);
-    setIsPlayingPreview(false);
     onFocusNode(CINEMA_FILMS[normalized].nodeId);
   };
 
   const handleStartOrTogglePlay = () => {
+    if (!isActiveSection) return;
     const video = previewVideoRef.current;
     if (!hasStartedPreview) {
       setHasStartedPreview(true);
@@ -98,6 +117,29 @@ export function CinemaSection({ onFocusNode }: CinemaSectionProps) {
   }, [modalFilm]);
 
   useEffect(() => {
+    if (!isActiveSection) {
+      stopAndResetPreview();
+      setModalFilm(null);
+    }
+  }, [isActiveSection]);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) {
+          stopAndResetPreview();
+          setModalFilm(null);
+        }
+      },
+      { threshold: 0.3 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
     if (!modalFilm) return;
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -109,7 +151,7 @@ export function CinemaSection({ onFocusNode }: CinemaSectionProps) {
   }, [modalFilm]);
 
   return (
-    <motion.div variants={staggerItemVariants} className="space-y-4">
+    <motion.div ref={containerRef} variants={staggerItemVariants} className="space-y-4">
       {/* Film Selector Toggle */}
       <div className="flex items-center justify-start">
         <div className="no-scrollbar inline-flex max-w-full items-center gap-1.5 overflow-x-auto rounded-xl border border-zinc-950/15 bg-white/90 p-1 dark:border-white/10 dark:bg-[#080d12]/92">
@@ -185,7 +227,7 @@ export function CinemaSection({ onFocusNode }: CinemaSectionProps) {
                   </button>
                 )}
 
-                {/* Bottom Controls: Play/Pause (when active) + Audio + Fullscreen */}
+                {/* Bottom Controls: Icon-only Play/Pause (when active) + Audio + Fullscreen */}
                 <div className="absolute bottom-2.5 left-2.5 right-2.5 z-10 flex items-center justify-between gap-2 sm:bottom-3 sm:left-3 sm:right-3">
                   <div className="flex items-center gap-1.5 sm:gap-2">
                     {hasStartedPreview && (
@@ -193,18 +235,13 @@ export function CinemaSection({ onFocusNode }: CinemaSectionProps) {
                         type="button"
                         onClick={handleStartOrTogglePlay}
                         aria-label={isPlayingPreview ? 'Pause film' : 'Resume film'}
-                        className="inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap shrink-0 rounded-lg border border-white/20 bg-black/80 px-2.5 py-1.5 text-[11px] font-medium text-white transition-colors hover:border-pink-300/60 hover:text-pink-200 sm:px-3 sm:text-xs"
+                        title={isPlayingPreview ? 'Pause' : 'Play'}
+                        className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-white/20 bg-black/80 text-white transition-colors hover:border-pink-300/60 hover:text-pink-200 sm:h-9 sm:w-9"
                       >
                         {isPlayingPreview ? (
-                          <>
-                            <Pause className="h-3.5 w-3.5" />
-                            <span className="hidden sm:inline">Pause</span>
-                          </>
+                          <Pause className="h-4 w-4" />
                         ) : (
-                          <>
-                            <Play className="h-3.5 w-3.5" />
-                            <span className="hidden sm:inline">Play</span>
-                          </>
+                          <Play className="h-4 w-4" />
                         )}
                       </button>
                     )}
@@ -215,18 +252,12 @@ export function CinemaSection({ onFocusNode }: CinemaSectionProps) {
                       aria-label={isMuted ? 'Unmute audio' : 'Mute audio'}
                       aria-pressed={!isMuted}
                       title={isMuted ? 'Audio Off' : 'Audio On'}
-                      className="inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap shrink-0 rounded-lg border border-white/20 bg-black/80 px-2.5 py-1.5 text-[11px] font-medium text-white transition-colors hover:border-pink-300/60 hover:text-pink-200 sm:px-3 sm:text-xs"
+                      className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-white/20 bg-black/80 text-white transition-colors hover:border-pink-300/60 hover:text-pink-200 sm:h-9 sm:w-9"
                     >
                       {isMuted ? (
-                        <>
-                          <VolumeX className="h-3.5 w-3.5 text-slate-300" />
-                          <span>Audio Off</span>
-                        </>
+                        <VolumeX className="h-4 w-4 text-slate-300" />
                       ) : (
-                        <>
-                          <Volume2 className="h-3.5 w-3.5 text-pink-300" />
-                          <span>Audio On</span>
-                        </>
+                        <Volume2 className="h-4 w-4 text-pink-300" />
                       )}
                     </button>
                   </div>
@@ -234,10 +265,11 @@ export function CinemaSection({ onFocusNode }: CinemaSectionProps) {
                   <button
                     type="button"
                     onClick={handleOpenFullscreen}
-                    className="inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap shrink-0 rounded-lg bg-zinc-950 px-2.5 py-1.5 text-[11px] font-semibold text-white transition-colors hover:bg-zinc-800 dark:bg-pink-400 dark:text-slate-950 dark:hover:bg-pink-300 sm:px-3.5 sm:text-xs"
+                    aria-label="Open fullscreen player"
+                    title="Fullscreen"
+                    className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg bg-zinc-950/90 text-white transition-colors hover:bg-zinc-800 dark:bg-pink-400 dark:text-slate-950 dark:hover:bg-pink-300 sm:h-9 sm:w-9"
                   >
-                    <Maximize2 className="h-3.5 w-3.5" />
-                    <span>Fullscreen</span>
+                    <Maximize2 className="h-4 w-4" />
                   </button>
                 </div>
               </div>

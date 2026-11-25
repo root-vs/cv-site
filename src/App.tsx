@@ -925,7 +925,10 @@ export default function App() {
             sectionRefs.current.cinema = el;
           }}
         >
-          <CinemaSection onFocusNode={(nid) => setActiveNodeId(nid)} />
+          <CinemaSection
+            onFocusNode={(nid) => setActiveNodeId(nid)}
+            isActiveSection={activeChapter === 'cinema'}
+          />
         </StorySection>
 
         {/* 09. CONTACT & FOOTER */}
