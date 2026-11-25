@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import {
   CHAPTER_PALETTES,
@@ -7,15 +7,18 @@ import {
 } from '../data/cvVault';
 import type { CubeThemeMode } from './ObsidianBrainCanvas';
 import { staggerItemVariants } from './StorySection';
+import { useHorizontalSwipe } from '../utils/useHorizontalSwipe';
 
 interface WorkExperienceSectionProps {
   onFocusNode: (nodeId: string) => void;
   theme?: CubeThemeMode;
+  isActiveSection?: boolean;
 }
 
 export function WorkExperienceSection({
   onFocusNode,
   theme = 'obsidian',
+  isActiveSection = false,
 }: WorkExperienceSectionProps) {
   const [activePhaseId, setActivePhaseId] = useState<string>(EXPERIENCE_PHASES[0].id);
   const isLight = theme === 'light';
@@ -31,8 +34,55 @@ export function WorkExperienceSection({
     onFocusNode(nodeId);
   };
 
+  const stepPhase = (delta: 1 | -1) => {
+    const curIdx = Math.max(
+      0,
+      EXPERIENCE_PHASES.findIndex((p) => p.id === activePhaseId)
+    );
+    const nextIdx = Math.min(EXPERIENCE_PHASES.length - 1, Math.max(0, curIdx + delta));
+    if (nextIdx !== curIdx) {
+      const nextPhase = EXPERIENCE_PHASES[nextIdx];
+      setActivePhaseId(nextPhase.id);
+      onFocusNode(nextPhase.nodeId);
+    }
+  };
+
+  const swipeHandlers = useHorizontalSwipe({
+    onNext: () => stepPhase(1),
+    onPrev: () => stepPhase(-1),
+  });
+
+  useEffect(() => {
+    if (!isActiveSection) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
+      if (document.querySelector('[role="dialog"]')) return;
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+
+      e.preventDefault();
+      stepPhase(e.key === 'ArrowRight' ? 1 : -1);
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isActiveSection, activePhaseId, onFocusNode]);
+
   return (
-    <motion.div variants={staggerItemVariants} className="space-y-5">
+    <motion.div
+      variants={staggerItemVariants}
+      {...swipeHandlers}
+      className="touch-pan-y space-y-5"
+    >
       <p className="text-sm font-medium text-teal-800 dark:text-teal-200/85">
         {WORK_EXPERIENCE_COMPANY}
       </p>
@@ -41,7 +91,7 @@ export function WorkExperienceSection({
       <div
         role="tablist"
         aria-label="Sytel Reply career milestones"
-        className="no-scrollbar flex flex-nowrap gap-4 overflow-x-auto border-b border-zinc-950/15 pb-1 dark:border-white/12 sm:gap-7"
+        className="no-scrollbar flex flex-nowrap gap-3.5 overflow-x-auto border-b border-zinc-950/15 pb-1 dark:border-white/12 sm:gap-7"
       >
         {EXPERIENCE_PHASES.map((phase) => {
           const isSelected = phase.id === activePhase.id;
@@ -51,14 +101,14 @@ export function WorkExperienceSection({
               role="tab"
               aria-selected={isSelected}
               onClick={() => handleSelectPhase(phase.id, phase.nodeId)}
-              className={`relative cursor-pointer whitespace-nowrap shrink-0 pb-3 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-950 dark:focus-visible:outline-teal-300 ${
+              className={`relative cursor-pointer whitespace-nowrap shrink-0 pb-2.5 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-zinc-950 dark:focus-visible:outline-teal-300 sm:pb-3 ${
                 isSelected
                   ? 'text-zinc-950 dark:text-teal-200'
                   : 'text-zinc-600 hover:text-zinc-950 dark:text-slate-400 dark:hover:text-slate-100'
               }`}
             >
-              <div className="text-xs font-semibold sm:text-sm">{phase.shortLabel}</div>
-              <div className="font-mono-tabular mt-0.5 text-[11px] text-zinc-500 dark:text-slate-400">
+              <div className="text-[11px] font-semibold sm:text-sm">{phase.shortLabel}</div>
+              <div className="font-mono-tabular mt-0.5 text-[10px] text-zinc-500 dark:text-slate-400 sm:text-[11px]">
                 {phase.period}
               </div>
               {isSelected && (
@@ -78,7 +128,7 @@ export function WorkExperienceSection({
       </div>
 
       {/* Fixed-Min-Height Wrapper: tab switches never resize or shift the menu/header above */}
-      <div className="min-h-[555px] sm:min-h-[455px] lg:min-h-[430px]">
+      <div className="min-h-[540px] sm:min-h-[455px] lg:min-h-[430px]">
         <AnimatePresence mode="wait">
           <motion.div
             key={activePhase.id}

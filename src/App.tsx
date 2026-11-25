@@ -37,6 +37,7 @@ import {
   SKILLS_GROUPS,
 } from './data/cvVault';
 import { soundEngine } from './utils/soundEngine';
+import { useHorizontalSwipe } from './utils/useHorizontalSwipe';
 
 const TYPED_GREETING = ABOUT_CONTENT.promptGreeting;
 
@@ -91,6 +92,10 @@ export default function App() {
 
   const activeChapterRef = useRef<ChapterId>(activeChapter);
   activeChapterRef.current = activeChapter;
+  const activeSkillGroupIdRef = useRef<string>(activeSkillGroupId);
+  activeSkillGroupIdRef.current = activeSkillGroupId;
+  const activeCertProviderRef = useRef<string>(activeCertProvider);
+  activeCertProviderRef.current = activeCertProvider;
   const lastArrowNavRef = useRef<{ index: number; timestamp: number }>({
     index: 0,
     timestamp: 0,
@@ -245,7 +250,47 @@ export default function App() {
     }
   }, []);
 
-  // Keyboard arrow navigation (Up/Left = backward, Down/Right = forward)
+  const stepSkillGroup = useCallback((delta: 1 | -1) => {
+    soundEngine.unlock();
+    const curIdx = Math.max(
+      0,
+      SKILLS_GROUPS.findIndex((g) => g.id === activeSkillGroupIdRef.current)
+    );
+    const nextIdx = Math.min(SKILLS_GROUPS.length - 1, Math.max(0, curIdx + delta));
+    if (nextIdx !== curIdx) {
+      const nextGroup = SKILLS_GROUPS[nextIdx];
+      setActiveSkillGroupId(nextGroup.id);
+      setActiveNodeId(nextGroup.id);
+    }
+  }, []);
+
+  const stepCertProvider = useCallback((delta: 1 | -1) => {
+    soundEngine.unlock();
+    const curIdx = Math.max(
+      0,
+      CERTIFICATIONS.findIndex((c) => c.nodeId === activeCertProviderRef.current)
+    );
+    const nextIdx = Math.min(CERTIFICATIONS.length - 1, Math.max(0, curIdx + delta));
+    if (nextIdx !== curIdx) {
+      const nextGroup = CERTIFICATIONS[nextIdx];
+      setActiveCertProvider(nextGroup.nodeId);
+      setActiveNodeId(nextGroup.nodeId);
+    }
+  }, []);
+
+  const skillsSwipe = useHorizontalSwipe({
+    onNext: () => stepSkillGroup(1),
+    onPrev: () => stepSkillGroup(-1),
+  });
+
+  const certsSwipe = useHorizontalSwipe({
+    onNext: () => stepCertProvider(1),
+    onPrev: () => stepCertProvider(-1),
+  });
+
+  // Keyboard arrow navigation:
+  // - ArrowUp / ArrowDown scroll between chapters
+  // - ArrowLeft / ArrowRight navigate horizontal section tabs (Skills, Certifications, Experience, AI Film)
   useEffect(() => {
     const onArrowKeyDown = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
@@ -262,8 +307,20 @@ export default function App() {
         return;
       }
 
-      const isNext = e.key === 'ArrowDown' || e.key === 'ArrowRight';
-      const isPrev = e.key === 'ArrowUp' || e.key === 'ArrowLeft';
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        const delta: 1 | -1 = e.key === 'ArrowRight' ? 1 : -1;
+        if (activeChapterRef.current === 'skills') {
+          e.preventDefault();
+          stepSkillGroup(delta);
+        } else if (activeChapterRef.current === 'certifications') {
+          e.preventDefault();
+          stepCertProvider(delta);
+        }
+        return;
+      }
+
+      const isNext = e.key === 'ArrowDown';
+      const isPrev = e.key === 'ArrowUp';
       if (!isNext && !isPrev) return;
 
       e.preventDefault();
@@ -289,7 +346,7 @@ export default function App() {
 
     window.addEventListener('keydown', onArrowKeyDown);
     return () => window.removeEventListener('keydown', onArrowKeyDown);
-  }, [paletteOpen, contactOpen, scrollToChapter]);
+  }, [paletteOpen, contactOpen, scrollToChapter, stepSkillGroup, stepCertProvider]);
 
   const handleSelectPiece = useCallback(
     (piece: CubePieceNode) => {
@@ -367,7 +424,7 @@ export default function App() {
 
       {/* Fixed 3-Zone Top Bar (stationary items, no layout shifts across theme/tab switches) */}
       <header className="fixed left-0 right-0 top-0 z-30 border-b border-zinc-950/12 bg-white/92 px-3 py-2.5 transition-colors duration-300 dark:border-white/10 dark:bg-[#04070a]/90 sm:px-6 sm:py-3 lg:px-8">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 sm:gap-4 lg:gap-6">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 sm:gap-4 lg:gap-5">
           <button
             type="button"
             onClick={() => scrollToChapter('home')}
@@ -376,49 +433,10 @@ export default function App() {
             Valerio Serino
           </button>
 
-          {/* Compact navigation for medium / small-laptop screens */}
+          {/* Unified Top Chapter Navigation mirroring the exact items of the Right Nav Rail */}
           <nav
-            aria-label="Primary navigation"
-            className="hidden items-center gap-3.5 text-xs font-medium text-zinc-600 dark:text-slate-300 md:flex lg:gap-6 xl:hidden"
-          >
-            {(
-              [
-                ['about', 'About'],
-                ['experience', 'Experience'],
-                ['publications', 'Research'],
-                ['cinema', 'AI Film'],
-                ['contact', 'Contact'],
-              ] as const
-            ).map(([chId, label]) => {
-              const isCurrent = activeChapter === chId;
-              const chHex = isLightTheme
-                ? CHAPTER_PALETTES[chId].lightInk
-                : CHAPTER_PALETTES[chId].obsidian;
-              return (
-                <button
-                  key={chId}
-                  type="button"
-                  onClick={() => scrollToChapter(chId)}
-                  className="relative cursor-pointer whitespace-nowrap shrink-0 py-0.5 transition-colors hover:text-zinc-950 dark:hover:text-white"
-                  style={isCurrent ? { color: chHex } : undefined}
-                >
-                  {label}
-                  {isCurrent && (
-                    <span
-                      aria-hidden="true"
-                      className="absolute -bottom-1 left-0 right-0 h-[1.5px] rounded-full"
-                      style={{ backgroundColor: chHex }}
-                    />
-                  )}
-                </button>
-              );
-            })}
-          </nav>
-
-          {/* Full chapter navigation mirroring the right-side rail on larger screens */}
-          <nav
-            aria-label="Full chapter navigation"
-            className="hidden items-center gap-3.5 text-xs font-medium text-zinc-600 dark:text-slate-300 xl:flex 2xl:gap-5"
+            aria-label="Primary chapter navigation"
+            className="no-scrollbar hidden min-w-0 flex-1 items-center gap-3 overflow-x-auto text-[11px] font-medium text-zinc-600 dark:text-slate-300 md:flex lg:justify-center lg:gap-3.5 xl:gap-4 xl:text-xs 2xl:gap-5"
           >
             {CHAPTERS.map((chapter) => {
               const isCurrent = activeChapter === chapter.id;
@@ -457,14 +475,14 @@ export default function App() {
               }
               aria-pressed={isLightTheme}
               title={isLightTheme ? 'Light Mode (Active)' : 'Dark Mode (Active)'}
-              className="inline-flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap shrink-0 rounded-lg border border-zinc-950/15 bg-zinc-100 p-2 text-xs font-medium text-zinc-900 transition-colors hover:border-zinc-950 dark:border-white/12 dark:bg-white/5 dark:text-slate-200 dark:hover:border-teal-300/40 dark:hover:text-teal-200 sm:px-2.5 sm:py-1.5"
+              className="inline-flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap shrink-0 rounded-lg border border-zinc-950/15 bg-zinc-100 p-2 text-xs font-medium text-zinc-900 transition-colors hover:border-zinc-950 dark:border-white/12 dark:bg-white/5 dark:text-slate-200 dark:hover:border-teal-300/40 dark:hover:text-teal-200 2xl:px-2.5 2xl:py-1.5"
             >
               {isLightTheme ? (
                 <Sun className="h-3.5 w-3.5 text-zinc-950" />
               ) : (
                 <Moon className="h-3.5 w-3.5 text-teal-300" />
               )}
-              <span className="hidden lg:inline">
+              <span className="hidden 2xl:inline">
                 {isLightTheme ? 'Light' : 'Dark'}
               </span>
             </button>
@@ -475,14 +493,14 @@ export default function App() {
               aria-label={soundEnabled ? 'Mute tactile sound' : 'Enable tactile sound'}
               aria-pressed={soundEnabled}
               title={soundEnabled ? 'SFX On' : 'SFX Off'}
-              className="inline-flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap shrink-0 rounded-lg border border-zinc-950/15 bg-zinc-100 p-2 text-xs font-medium text-zinc-900 transition-colors hover:border-zinc-950 dark:border-white/12 dark:bg-white/5 dark:text-slate-200 dark:hover:border-teal-300/40 dark:hover:text-teal-200 sm:px-2.5 sm:py-1.5"
+              className="inline-flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap shrink-0 rounded-lg border border-zinc-950/15 bg-zinc-100 p-2 text-xs font-medium text-zinc-900 transition-colors hover:border-zinc-950 dark:border-white/12 dark:bg-white/5 dark:text-slate-200 dark:hover:border-teal-300/40 dark:hover:text-teal-200 sm:px-2.5 sm:py-1.5 md:p-2 2xl:px-2.5 2xl:py-1.5"
             >
               {soundEnabled ? (
                 <Volume2 className="h-3.5 w-3.5 text-zinc-950 dark:text-teal-300" />
               ) : (
                 <VolumeX className="h-3.5 w-3.5 text-zinc-500 dark:text-slate-400" />
               )}
-              <span className="hidden sm:inline md:hidden lg:inline">
+              <span className="hidden sm:inline md:hidden 2xl:inline">
                 {soundEnabled ? 'SFX On' : 'SFX Off'}
               </span>
             </button>
@@ -492,10 +510,10 @@ export default function App() {
               onClick={() => setPaletteOpen(true)}
               aria-label="Search and navigate cube"
               title="Navigate Cube"
-              className="inline-flex cursor-pointer items-center justify-center gap-2 whitespace-nowrap shrink-0 rounded-lg border border-zinc-950 bg-zinc-950 p-2 text-xs font-medium text-white transition-colors hover:bg-zinc-800 dark:border-teal-300/35 dark:bg-teal-400/12 dark:text-teal-200 dark:hover:bg-teal-400/22 sm:px-3.5 sm:py-1.5"
+              className="inline-flex cursor-pointer items-center justify-center gap-2 whitespace-nowrap shrink-0 rounded-lg border border-zinc-950 bg-zinc-950 p-2 text-xs font-medium text-white transition-colors hover:bg-zinc-800 dark:border-teal-300/35 dark:bg-teal-400/12 dark:text-teal-200 dark:hover:bg-teal-400/22 sm:px-3.5 sm:py-1.5 md:p-2 xl:px-3.5 xl:py-1.5"
             >
               <Search className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Navigate Cube</span>
+              <span className="hidden sm:inline md:hidden xl:inline">Navigate Cube</span>
             </button>
           </div>
         </div>
@@ -522,12 +540,12 @@ export default function App() {
           lightAccentColor={CHAPTER_PALETTES.home.lightInk}
           isActive={activeChapter === 'home'}
           focusProximity={proximities.home}
-          maxWidthClass="max-w-xl"
+          maxWidthClass="max-w-xl lg:max-w-lg xl:max-w-xl"
           sectionRef={(el) => {
             sectionRefs.current.home = el;
           }}
         >
-          <motion.div variants={staggerItemVariants} className="space-y-5 sm:space-y-6">
+          <motion.div variants={staggerItemVariants} className="space-y-4 sm:space-y-6">
             <div className="flex items-center gap-3.5 sm:gap-5">
               <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-zinc-950/20 bg-zinc-200 shadow-lg dark:border-teal-300/40 dark:bg-[#070d12] dark:shadow-[0_0_25px_rgba(94,234,212,0.18)] sm:h-20 sm:w-20 md:h-24 md:w-24">
                 <img
@@ -541,17 +559,17 @@ export default function App() {
                 <p className="text-[11px] font-semibold tracking-wider text-zinc-700 dark:text-teal-300 sm:text-xs">
                   Interactive 3D Knowledge Cube
                 </p>
-                <h1 className="font-display mt-1 text-[clamp(1.75rem,4.4vw,3.15rem)] leading-[1.1] font-bold tracking-tight text-balance text-zinc-950 dark:text-slate-50">
+                <h1 className="font-display mt-1 text-[clamp(1.55rem,5.2vw,3.15rem)] leading-[1.1] font-bold tracking-tight text-balance text-zinc-950 dark:text-slate-50">
                   Valerio Serino
                 </h1>
-                <p className="mt-1.5 text-xs text-zinc-700 dark:text-slate-300 sm:text-sm md:text-base">
+                <p className="mt-1.5 text-[13px] text-zinc-700 dark:text-slate-300 sm:text-sm md:text-base">
                   Senior IT Consultant · AI, Distributed Systems &amp; Security
                 </p>
               </div>
             </div>
 
             {/* Sleek Terminal Prompt */}
-            <div className="max-w-lg border-l-2 border-zinc-950 bg-white/90 px-3.5 py-2.5 font-mono-tabular text-xs text-zinc-900 shadow-xs dark:border-teal-300 dark:bg-[#070d12]/75 dark:text-slate-100 sm:px-4 sm:py-3 sm:text-sm">
+            <div className="min-h-[42px] max-w-lg border-l-2 border-zinc-950 bg-white/90 px-3.5 py-2.5 font-mono-tabular text-xs text-zinc-900 shadow-xs dark:border-teal-300 dark:bg-[#070d12]/75 dark:text-slate-100 sm:min-h-[46px] sm:px-4 sm:py-3 sm:text-sm">
               <span className="mr-2 font-bold text-zinc-950 dark:text-teal-300">$</span>
               <span>{TYPED_GREETING.slice(0, typedLength)}</span>
               <span className="terminal-cursor ml-0.5 inline-block text-zinc-950 dark:text-teal-300">
@@ -560,7 +578,7 @@ export default function App() {
             </div>
 
             {/* Clean CTAs */}
-            <div className="flex flex-wrap items-center gap-3 sm:gap-3.5">
+            <div className="flex flex-wrap items-center gap-2.5 sm:gap-3.5">
               <button
                 type="button"
                 onClick={() => scrollToChapter('about')}
@@ -581,16 +599,16 @@ export default function App() {
             </div>
 
             {/* Hairline KPI Strip */}
-            <div className="grid grid-cols-1 divide-y divide-zinc-950/15 border-t border-zinc-950/15 pt-4 dark:divide-white/12 dark:border-white/12 sm:grid-cols-3 sm:divide-x sm:divide-y-0 sm:pt-5">
+            <div className="grid grid-cols-1 divide-y divide-zinc-950/15 border-t border-zinc-950/15 pt-3.5 dark:divide-white/12 dark:border-white/12 sm:grid-cols-3 sm:divide-x sm:divide-y-0 sm:pt-5">
               {EXECUTIVE_METRICS.map((metric, idx) => (
                 <div
                   key={metric.id}
                   className={
                     idx === 0
-                      ? 'pb-3 sm:pb-0 sm:pr-4'
+                      ? 'pb-2.5 sm:pb-0 sm:pr-4'
                       : idx === 1
-                      ? 'py-3 sm:px-4 sm:py-0'
-                      : 'pt-3 sm:pl-4 sm:pt-0'
+                      ? 'py-2.5 sm:px-4 sm:py-0'
+                      : 'pt-2.5 sm:pl-4 sm:pt-0'
                   }
                 >
                   <div
@@ -623,7 +641,7 @@ export default function App() {
           lightAccentColor={CHAPTER_PALETTES.about.lightInk}
           isActive={activeChapter === 'about'}
           focusProximity={proximities.about}
-          maxWidthClass="max-w-xl"
+          maxWidthClass="max-w-xl lg:max-w-lg xl:max-w-xl"
           sectionRef={(el) => {
             sectionRefs.current.about = el;
           }}
@@ -661,13 +679,17 @@ export default function App() {
           lightAccentColor={CHAPTER_PALETTES.skills.lightInk}
           isActive={activeChapter === 'skills'}
           focusProximity={proximities.skills}
-          maxWidthClass="max-w-xl"
+          maxWidthClass="max-w-xl lg:max-w-lg xl:max-w-xl"
           sectionRef={(el) => {
             sectionRefs.current.skills = el;
           }}
         >
-          <motion.div variants={staggerItemVariants} className="space-y-5 sm:space-y-6">
-            <div className="no-scrollbar flex flex-nowrap gap-1.5 overflow-x-auto border-b border-zinc-950/15 pb-3 dark:border-white/12 sm:flex-wrap sm:gap-2">
+          <motion.div
+            variants={staggerItemVariants}
+            {...skillsSwipe}
+            className="touch-pan-y space-y-5 sm:space-y-6"
+          >
+            <div className="flex flex-wrap gap-1.5 border-b border-zinc-950/15 pb-3 dark:border-white/12 sm:gap-2">
               {SKILLS_GROUPS.map((group) => {
                 const isSelected = group.id === activeSkillsGroup.id;
                 return (
@@ -678,7 +700,7 @@ export default function App() {
                       setActiveSkillGroupId(group.id);
                       setActiveNodeId(group.id);
                     }}
-                    className={`relative cursor-pointer whitespace-nowrap shrink-0 rounded-lg px-3 py-2 text-xs font-semibold transition-colors sm:px-3.5 ${
+                    className={`relative cursor-pointer whitespace-nowrap shrink-0 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold transition-colors sm:px-3.5 sm:py-2 sm:text-xs ${
                       isSelected
                         ? 'text-white dark:text-slate-950'
                         : 'text-zinc-700 hover:bg-zinc-950/6 hover:text-zinc-950 dark:text-slate-300 dark:hover:bg-white/5 dark:hover:text-white'
@@ -698,7 +720,7 @@ export default function App() {
             </div>
 
             {/* Locked minimum height prevents tab bar & title from shifting vertically */}
-            <div className="min-h-[260px] sm:min-h-[195px]">
+            <div className="min-h-[250px] sm:min-h-[195px]">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={activeSkillsGroup.id}
@@ -706,7 +728,7 @@ export default function App() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
-                  className="grid grid-cols-2 gap-x-4 gap-y-2.5 sm:grid-cols-3 sm:gap-x-6 sm:gap-y-3"
+                  className="grid grid-cols-2 gap-x-3.5 gap-y-2.5 sm:grid-cols-3 sm:gap-x-6 sm:gap-y-3"
                 >
                   {activeSkillsGroup.items.map((item, idx) => (
                     <motion.div
@@ -714,7 +736,7 @@ export default function App() {
                       initial={{ opacity: 0, x: 8 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: idx * 0.025, duration: 0.24 }}
-                      className="border-b border-zinc-950/12 pb-2 text-xs font-medium text-zinc-900 dark:border-white/10 dark:text-slate-100 sm:text-sm"
+                      className="break-words border-b border-zinc-950/12 pb-2 text-xs font-medium text-zinc-900 dark:border-white/10 dark:text-slate-100 sm:text-sm"
                     >
                       {item}
                     </motion.div>
@@ -737,12 +759,16 @@ export default function App() {
           lightAccentColor={CHAPTER_PALETTES.experience.lightInk}
           isActive={activeChapter === 'experience'}
           focusProximity={proximities.experience}
-          maxWidthClass="max-w-2xl"
+          maxWidthClass="max-w-2xl lg:max-w-lg xl:max-w-2xl"
           sectionRef={(el) => {
             sectionRefs.current.experience = el;
           }}
         >
-          <WorkExperienceSection onFocusNode={(nid) => setActiveNodeId(nid)} theme={theme} />
+          <WorkExperienceSection
+            onFocusNode={(nid) => setActiveNodeId(nid)}
+            theme={theme}
+            isActiveSection={activeChapter === 'experience'}
+          />
         </StorySection>
 
         {/* 04. CERTIFICATIONS (Amethyst Violet Parent · Locked Fixed Height across tabs) */}
@@ -757,12 +783,16 @@ export default function App() {
           lightAccentColor={CHAPTER_PALETTES.certifications.lightInk}
           isActive={activeChapter === 'certifications'}
           focusProximity={proximities.certifications}
-          maxWidthClass="max-w-xl"
+          maxWidthClass="max-w-xl lg:max-w-lg xl:max-w-xl"
           sectionRef={(el) => {
             sectionRefs.current.certifications = el;
           }}
         >
-          <motion.div variants={staggerItemVariants} className="space-y-5">
+          <motion.div
+            variants={staggerItemVariants}
+            {...certsSwipe}
+            className="touch-pan-y space-y-5"
+          >
             <div className="no-scrollbar flex flex-nowrap gap-5 overflow-x-auto border-b border-zinc-950/15 pb-3 dark:border-white/12 sm:gap-6">
               {CERTIFICATIONS.map((group) => {
                 const isSelected = group.nodeId === activeCertGroup.nodeId;
@@ -835,7 +865,7 @@ export default function App() {
           lightAccentColor={CHAPTER_PALETTES.publications.lightInk}
           isActive={activeChapter === 'publications'}
           focusProximity={proximities.publications}
-          maxWidthClass="max-w-xl"
+          maxWidthClass="max-w-xl lg:max-w-lg xl:max-w-xl"
           sectionRef={(el) => {
             sectionRefs.current.publications = el;
           }}
@@ -879,7 +909,7 @@ export default function App() {
           lightAccentColor={CHAPTER_PALETTES.education.lightInk}
           isActive={activeChapter === 'education'}
           focusProximity={proximities.education}
-          maxWidthClass="max-w-2xl"
+          maxWidthClass="max-w-2xl lg:max-w-lg xl:max-w-2xl"
           sectionRef={(el) => {
             sectionRefs.current.education = el;
           }}
@@ -899,7 +929,7 @@ export default function App() {
           lightAccentColor={CHAPTER_PALETTES.projects.lightInk}
           isActive={activeChapter === 'projects'}
           focusProximity={proximities.projects}
-          maxWidthClass="max-w-2xl"
+          maxWidthClass="max-w-2xl lg:max-w-lg xl:max-w-2xl"
           sectionRef={(el) => {
             sectionRefs.current.projects = el;
           }}
@@ -948,9 +978,9 @@ export default function App() {
             sectionRefs.current.contact = el;
           }}
         >
-          <motion.div variants={staggerItemVariants} className="space-y-5 sm:space-y-6">
+          <motion.div variants={staggerItemVariants} className="space-y-4 sm:space-y-6">
             <div className="grid grid-cols-1 divide-y divide-zinc-950/12 border-y border-zinc-950/15 dark:divide-white/10 dark:border-white/12 sm:grid-cols-2 sm:divide-x sm:divide-y-0">
-              <div className="flex items-center gap-3.5 py-4 text-left sm:pr-6">
+              <div className="flex items-center gap-3.5 py-3 text-left sm:py-4 sm:pr-6">
                 <MapPin className="h-5 w-5 shrink-0 text-zinc-950 dark:text-slate-200" />
                 <div className="min-w-0">
                   <div className="text-[11px] text-zinc-600 dark:text-slate-400">Location</div>
@@ -962,7 +992,7 @@ export default function App() {
 
               <a
                 href={CONTACT_INFO.phoneHref}
-                className="flex items-center gap-3.5 py-4 text-left transition-colors hover:text-zinc-600 dark:hover:text-teal-200 sm:pl-6"
+                className="flex items-center gap-3.5 py-3 text-left transition-colors hover:text-zinc-600 dark:hover:text-teal-200 sm:py-4 sm:pl-6"
               >
                 <Phone className="h-5 w-5 shrink-0 text-zinc-950 dark:text-slate-200" />
                 <div className="min-w-0">
@@ -974,10 +1004,10 @@ export default function App() {
               </a>
             </div>
 
-            <div className="grid grid-cols-1 divide-y divide-zinc-950/12 border-b border-zinc-950/15 pb-2 dark:divide-white/10 dark:border-white/12 sm:grid-cols-2 sm:divide-x sm:divide-y-0">
+            <div className="grid grid-cols-1 divide-y divide-zinc-950/12 border-b border-zinc-950/15 pb-1 dark:divide-white/10 dark:border-white/12 sm:grid-cols-2 sm:divide-x sm:divide-y-0 sm:pb-2">
               <a
                 href={CONTACT_INFO.emailHref}
-                className="flex items-center gap-3.5 py-4 text-left transition-colors hover:text-zinc-600 dark:hover:text-teal-200 sm:pr-6"
+                className="flex items-center gap-3.5 py-3 text-left transition-colors hover:text-zinc-600 dark:hover:text-teal-200 sm:py-4 sm:pr-6"
               >
                 <Mail className="h-5 w-5 shrink-0 text-zinc-950 dark:text-slate-200" />
                 <div className="min-w-0 flex-1">
@@ -992,7 +1022,7 @@ export default function App() {
                 href={CONTACT_INFO.linkedinUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-between gap-3 py-4 text-left transition-colors hover:text-zinc-600 dark:hover:text-teal-200 sm:pl-6"
+                className="flex items-center justify-between gap-3 py-3 text-left transition-colors hover:text-zinc-600 dark:hover:text-teal-200 sm:py-4 sm:pl-6"
               >
                 <div className="flex min-w-0 flex-1 items-center gap-3.5">
                   <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-sm bg-zinc-950 text-xs font-bold text-white dark:bg-slate-200/20 dark:text-slate-200">

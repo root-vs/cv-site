@@ -3,6 +3,7 @@ import { Maximize2, Play, Pause, Volume2, VolumeX, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { CINEMA_FILMS, CinemaFilm } from '../data/cvVault';
 import { staggerItemVariants } from './StorySection';
+import { useHorizontalSwipe } from '../utils/useHorizontalSwipe';
 
 interface CinemaSectionProps {
   onFocusNode: (nodeId: string) => void;
@@ -139,6 +140,46 @@ export function CinemaSection({
     return () => observer.disconnect();
   }, []);
 
+  const stepFilm = (delta: 1 | -1) => {
+    const nextIdx = Math.min(CINEMA_FILMS.length - 1, Math.max(0, activeIndex + delta));
+    if (nextIdx !== activeIndex) {
+      stopAndResetPreview();
+      setActiveIndex(nextIdx);
+      onFocusNode(CINEMA_FILMS[nextIdx].nodeId);
+    }
+  };
+
+  const swipeHandlers = useHorizontalSwipe({
+    onNext: () => stepFilm(1),
+    onPrev: () => stepFilm(-1),
+    enabled: !modalFilm,
+  });
+
+  useEffect(() => {
+    if (!isActiveSection || modalFilm) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
+      if (document.querySelector('[role="dialog"]')) return;
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+
+      e.preventDefault();
+      stepFilm(e.key === 'ArrowRight' ? 1 : -1);
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isActiveSection, modalFilm, activeIndex, onFocusNode]);
+
   useEffect(() => {
     if (!modalFilm) return;
     const onKeyDown = (e: KeyboardEvent) => {
@@ -151,7 +192,12 @@ export function CinemaSection({
   }, [modalFilm]);
 
   return (
-    <motion.div ref={containerRef} variants={staggerItemVariants} className="space-y-4">
+    <motion.div
+      ref={containerRef}
+      variants={staggerItemVariants}
+      {...swipeHandlers}
+      className="touch-pan-y space-y-4"
+    >
       {/* Film Selector Toggle */}
       <div className="flex items-center justify-start">
         <div className="no-scrollbar inline-flex max-w-full items-center gap-1.5 overflow-x-auto rounded-xl border border-zinc-950/15 bg-white/90 p-1 dark:border-white/10 dark:bg-[#080d12]/92">

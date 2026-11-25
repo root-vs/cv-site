@@ -16,18 +16,18 @@ export function EducationSection({ onFocusNode }: EducationSectionProps) {
   };
 
   return (
-    <motion.div variants={staggerItemVariants} className="space-y-6">
+    <motion.div variants={staggerItemVariants} className="space-y-5 sm:space-y-6">
       {/* Master's Degree */}
       <button
         type="button"
         onClick={() => handleSelect('msc', 'edu-msc')}
         onMouseEnter={() => handleSelect('msc', 'edu-msc')}
-        className={`block w-full cursor-pointer border-b border-zinc-950/15 pb-6 text-left transition-opacity dark:border-white/12 ${
+        className={`block w-full cursor-pointer border-b border-zinc-950/15 pb-5 text-left transition-opacity dark:border-white/12 sm:pb-6 ${
           selectedDegree === 'msc' ? 'opacity-100' : 'opacity-80 hover:opacity-100'
         }`}
       >
         <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-          <h3 className="font-display text-base font-semibold text-emerald-800 dark:text-emerald-300 sm:text-lg">
+          <h3 className="font-display text-[15px] font-semibold leading-snug text-emerald-800 dark:text-emerald-300 sm:text-lg">
             {EDUCATION_DEGREES.msc.degree}
           </h3>
           <span className="font-mono-tabular shrink-0 text-xs text-zinc-600 dark:text-slate-400">
@@ -39,14 +39,14 @@ export function EducationSection({ onFocusNode }: EducationSectionProps) {
           {EDUCATION_DEGREES.msc.institution}
         </p>
 
-        <p className="mt-3 text-[13px] leading-relaxed text-zinc-900 dark:text-slate-200 sm:text-sm">
+        <p className="mt-2.5 text-[13px] leading-relaxed text-zinc-900 dark:text-slate-200 sm:mt-3 sm:text-sm">
           <span className="font-semibold text-zinc-950 dark:text-slate-100">Thesis: </span>
           <span className="italic text-zinc-700 dark:text-slate-300">
             {EDUCATION_DEGREES.msc.thesis}
           </span>
         </p>
 
-        <p className="mt-2.5 text-xs text-zinc-600 dark:text-slate-400">
+        <p className="mt-2 text-xs text-zinc-600 dark:text-slate-400 sm:mt-2.5">
           <span className="font-semibold text-emerald-800 dark:text-emerald-300/90">
             Focus:{' '}
           </span>
@@ -64,7 +64,7 @@ export function EducationSection({ onFocusNode }: EducationSectionProps) {
         }`}
       >
         <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-          <h3 className="font-display text-base font-semibold text-emerald-800 dark:text-emerald-300 sm:text-lg">
+          <h3 className="font-display text-[15px] font-semibold leading-snug text-emerald-800 dark:text-emerald-300 sm:text-lg">
             {EDUCATION_DEGREES.bsc.degree}
           </h3>
           <span className="font-mono-tabular shrink-0 text-xs text-zinc-600 dark:text-slate-400">
